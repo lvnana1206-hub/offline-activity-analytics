@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Data files (never commit real business data)
+*.xlsx
+*.xls
+*.csv
+*.db
+*.sqlite
+*.json
+
+# Environment
+.env
+*.env
+feishu_proxy.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Output
+output/*.html
+output/*.png
+output/*.pdf
+reports/*.html
+reports/*.pdf
+
+# Logs
+*.log
+flask_server.log
