@@ -1,0 +1,3189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国区专卖店线下活动经营分析平台</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root {
+  --sidebar-bg: #1a2332;
+  --sidebar-hover: #2d3b52;
+  --sidebar-active: #4f46e5;
+  --content-bg: #f1f5f9;
+  --card-bg: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-light: #94a3b8;
+  --border: #e2e8f0;
+  --primary: #4f46e5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #0ea5e9;
+  --radius: 6px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--content-bg); color: var(--text-primary); }
+
+/* Layout */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; background: var(--sidebar-bg); color: #cbd5e1;
+  display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+}
+.sidebar-header { padding: 20px 18px 16px; border-bottom: 1px solid #2d3b52; }
+.sidebar-header h1 { font-size: 15px; font-weight: 600; color: #fff; line-height: 1.4; }
+.sidebar-header p { font-size: 11px; color: #64748b; margin-top: 4px; }
+.nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 18px; cursor: pointer; font-size: 13px; color: #94a3b8;
+  transition: all .15s; border-left: 3px solid transparent;
+}
+.nav-item:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+.nav-item.active { background: rgba(79,70,229,.15); color: #fff; border-left-color: var(--sidebar-active); }
+.nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.main { flex: 1; margin-left: 220px; padding: 0; }
+.content { padding: 20px 24px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* KPI Cards */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.kpi-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+.kpi-card .value { font-size: 26px; font-weight: 700; color: var(--text-primary); }
+.kpi-card .sub { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+.kpi-card .value.primary { color: var(--primary); }
+.kpi-card .value.success { color: var(--success); }
+.kpi-card .value.warning { color: var(--warning); }
+.kpi-card .value.danger { color: var(--danger); }
+.kpi-card .value.info { color: var(--info); }
+
+/* Chart Cards */
+.chart-grid { display: grid; gap: 16px; margin-bottom: 16px; }
+.chart-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.chart-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.chart-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.chart-card .title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.chart-card .title .badge { font-size: 11px; font-weight: 400; color: var(--text-light); }
+.chart-body { width: 100%; }
+
+/* Tables */
+.table-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px;
+}
+.table-card .title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 12px; background: #f8fafc; color: var(--text-secondary); font-weight: 600; white-space: nowrap; border-bottom: 2px solid var(--border); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tr:hover td { background: #f8fafc; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+/* Pagination */
+.pagination { display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 12px; }
+.pagination button { padding: 6px 12px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.pagination button:hover { background: var(--content-bg); }
+.pagination button:disabled { opacity: .4; cursor: default; }
+.pagination .info { font-size: 12px; color: var(--text-light); }
+
+/* Search */
+.search-box { padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; width: 220px; }
+
+/* Diagnosis */
+.diag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.diag-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06); border-left: 4px solid var(--primary);
+}
+.diag-card.high { border-left-color: var(--danger); }
+.diag-card.medium { border-left-color: var(--warning); }
+.diag-card.low { border-left-color: var(--info); }
+.diag-card .count { font-size: 28px; font-weight: 700; }
+.diag-card .label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.diag-card .desc { font-size: 11px; color: var(--text-light); margin-top: 6px; }
+
+/* Issue list */
+.issue-list { max-height: 400px; overflow-y: auto; }
+.issue-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; gap: 8px; }
+.issue-tag { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
+.issue-tag.high { background: #fee2e2; color: #dc2626; }
+.issue-tag.medium { background: #fef3c7; color: #d97706; }
+.issue-tag.low { background: #dbeafe; color: #2563eb; }
+
+/* Excellent cases */
+.case-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 12px;
+  display: flex; gap: 16px; align-items: center;
+}
+.case-rank { font-size: 24px; font-weight: 800; color: var(--primary); min-width: 40px; text-align: center; }
+.case-info { flex: 1; }
+.case-info .name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.case-info .meta { font-size: 12px; color: var(--text-secondary); }
+.case-sales { text-align: right; }
+.case-sales .amount { font-size: 20px; font-weight: 700; color: var(--success); }
+.case-sales .label { font-size: 11px; color: var(--text-light); }
+
+/* Section title */
+.section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+
+/* Loading */
+.loading { text-align: center; padding: 40px; color: var(--text-light); font-size: 14px; }
+.tab-bar { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid var(--border); }
+.tab-btn { padding: 8px 20px; cursor: pointer; font-size: 13px; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+/* Grade Badge */
+.grade-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 700; min-width: 24px; text-align: center; }
+.grade-badge.A { background: #d1fae5; color: #059669; }
+.grade-badge.B { background: #dbeafe; color: #2563eb; }
+.grade-badge.C { background: #fef3c7; color: #d97706; }
+.grade-badge.D { background: #fee2e2; color: #dc2626; }
+
+/* Insight Cards */
+.insight-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.insight-card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-left: 4px solid var(--primary); }
+.insight-card.high { border-left-color: var(--danger); }
+.insight-card.medium { border-left-color: var(--warning); }
+.insight-card.low, .insight-card.info { border-left-color: var(--info); }
+.insight-card .i-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; line-height: 1.4; }
+.insight-card .i-detail { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.insight-card .i-action { font-size: 11px; color: var(--primary); margin-top: 6px; font-weight: 600; }
+
+/* Recommendation Cards */
+.rec-card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 10px; display: flex; gap: 14px; }
+.rec-priority { font-size: 20px; font-weight: 800; color: var(--primary); min-width: 32px; }
+.rec-body { flex: 1; }
+.rec-body .r-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.rec-body .r-detail { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.rec-meta { font-size: 11px; color: var(--text-light); margin-top: 6px; }
+.rec-meta span { margin-right: 12px; }
+
+/* Score column */
+.score-cell { font-weight: 700; }
+
+/* Review Center */
+.review-section { margin-bottom: 24px; }
+.review-section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; padding: 8px 12px; background: linear-gradient(90deg, #4f46e5, #818cf8); color: #fff; border-radius: 4px; }
+.review-summary { background: linear-gradient(135deg, #f0f4ff, #e0e7ff); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; font-size: 14px; line-height: 1.6; color: #1e293b; border-left: 4px solid var(--primary); }
+.review-text { font-size: 13px; line-height: 1.7; color: var(--text-primary); padding: 10px 0; }
+.review-text-analysis { background: #f8fafc; border-radius: var(--radius); padding: 12px 16px; margin: 8px 0; font-size: 13px; line-height: 1.7; }
+.review-text-analysis p { margin-bottom: 6px; }
+.review-finding { background: var(--card-bg); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 10px; border-left: 4px solid var(--danger); }
+.review-finding .f-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 2px; }
+.review-finding .f-content { font-size: 13px; margin-bottom: 4px; }
+.review-rec-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.review-rec-cat { font-size: 12px; font-weight: 700; color: var(--primary); min-width: 80px; }
+.review-rec-text { font-size: 13px; color: var(--text-primary); flex: 1; }
+.before-after-table th { background: #eef2ff; }
+.before-after-table .change-up { color: var(--success); font-weight: 600; }
+.before-after-table .change-down { color: var(--danger); font-weight: 600; }
+.sub-menu { padding-left: 8px; }
+.sub-menu .nav-item { padding-left: 38px; font-size: 12px; }
+.nav-group-label { padding: 12px 16px 4px; font-size: 11px; color: var(--text-light); letter-spacing: .5px; text-transform: uppercase; }
+.analysis-finding { background: var(--card-bg); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-left: 4px solid var(--primary); }
+.analysis-finding.high { border-left-color: var(--danger); }
+.analysis-finding.medium { border-left-color: var(--warning); }
+.analysis-finding.low { border-left-color: var(--info); }
+.analysis-finding .f-grid { display: grid; grid-template-columns: 48px 1fr; gap: 4px 10px; font-size: 12px; line-height: 1.6; }
+.analysis-finding .f-tag { color: var(--text-light); font-weight: 600; }
+.analysis-finding .f-text { color: var(--text-secondary); }
+.analysis-finding .f-text.action { color: var(--primary); font-weight: 600; }
+.analysis-section-title { font-size: 14px; font-weight: 700; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.anomaly-tag { font-size: 11px; color: #fff; background: var(--danger); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.pill-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font-size: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 3px 10px; color: var(--text-secondary); }
+.pill.risk { color: var(--danger); border-color: rgba(239,68,68,.3); }
+
+/* Global Filter Bar */
+.filter-bar {
+  background: var(--card-bg); border-radius: var(--radius); padding: 12px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap; position: sticky; top: 0; z-index: 50;
+}
+.filter-group { display: flex; align-items: center; gap: 8px; }
+.filter-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.filter-seg { display: flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.filter-seg button {
+  padding: 5px 12px; border: none; background: #fff; cursor: pointer;
+  font-size: 12px; color: var(--text-secondary); transition: all .12s; border-right: 1px solid var(--border);
+}
+.filter-seg button:last-child { border-right: none; }
+.filter-seg button:hover { background: var(--content-bg); }
+.filter-seg button.active { background: var(--primary); color: #fff; font-weight: 600; }
+.filter-input { padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
+.filter-reset {
+  padding: 5px 14px; border: 1px solid var(--danger); background: #fff; color: var(--danger);
+  border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all .12s;
+}
+.filter-reset:hover { background: var(--danger); color: #fff; }
+.filter-info { font-size: 12px; color: var(--text-light); margin-left: auto; }
+.filter-count { font-weight: 700; color: var(--primary); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>线下活动经营分析平台</h1>
+      <p>中国区专卖店 · Local BI</p>
+    </div>
+    <div class="nav" id="nav">
+     <div class="nav-item active" data-page="overview" onclick="navigate('overview')">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+       经营概览
+     </div>
+      <div class="nav-item" data-page="daily" onclick="navigate('daily')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        每日经营分析
+      </div>
+      <div class="nav-item" data-page="weekly" onclick="navigate('weekly')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        每周经营分析
+      </div>
+      <div class="nav-item" data-page="monthly" onclick="navigate('monthly')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg>
+        每月经营分析
+      </div>
+      <div class="nav-item" data-page="activity" onclick="navigate('activity')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        活动经营分析
+      </div>
+      <div class="nav-item" data-page="store" onclick="navigate('store')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5"/><path d="M5 9v11h14V9"/><path d="M9 22v-6h6v6"/></svg>
+        门店经营分析
+      </div>
+      <div class="nav-item" data-page="dealer" onclick="navigate('dealer')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        代理商经营分析
+      </div>
+      <div class="nav-item" data-page="product" onclick="navigate('product')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        产品经营分析
+      </div>
+      <div class="nav-item" data-page="region" onclick="navigate('region')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 1.892.402 3.13 1.5 4.5L12 22l6.5-7.5c1.098-1.37 1.5-2.608 1.5-4.5a8 8 0 0 0-8-8z"/></svg>
+       区域经营分析
+     </div>
+      <div class="nav-item" data-page="channel" onclick="navigate('channel')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v6H3zM3 15h18v6H3zM9 9v6M15 9v6"/></svg>
+        渠道分析
+      </div>
+     <div class="nav-item" data-page="diagnosis" onclick="navigate('diagnosis')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11H3v10h6V11zM21 3h-6v18h6V3zM15 9H9v12h6V9z"/></svg>
+        经营诊断
+      </div>
+      <div class="nav-item" data-page="efficiency" onclick="navigate('efficiency')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        效率指标分析
+      </div>
+      <div class="nav-item" data-page="excellent" onclick="navigate('excellent')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        优秀案例中心
+      </div>
+      <div class="nav-item" data-page="brand" onclick="navigate('brand')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        异业合作品牌分析
+      </div>
+      <div class="nav-group-label">季度经营复盘中心</div>
+      <div class="nav-item" data-page="q2review" onclick="navigate('q2review')" style="padding-left:38px;font-size:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Q2季度经营复盘
+      </div>
+      <div class="nav-item" data-page="lunareview" onclick="navigate('lunareview')" style="padding-left:38px;font-size:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+        Luna上市经营复盘
+      </div>
+      <div class="nav-item" data-page="qtrack" onclick="navigate('qtrack')" style="padding-left:38px;font-size:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        季度实时追踪
+      </div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="content">
+
+      <!-- Global Filter Bar -->
+      <div class="filter-bar" id="filter-bar">
+        <div class="filter-group">
+          <span class="filter-label">代理商类型</span>
+          <div class="filter-seg" id="filter-dealer-type">
+            <button class="active" data-val="all" onclick="setFilter('dealer_type','all')">全部</button>
+            <button data-val="Mall商" onclick="setFilter('dealer_type','Mall商')">Mall商</button>
+            <button data-val="照材商" onclick="setFilter('dealer_type','照材商')">照材商</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">门店类型</span>
+          <div class="filter-seg" id="filter-store-type">
+            <button class="active" data-val="all" onclick="setFilter('store_type','all')">全部</button>
+            <button data-val="Mall店" onclick="setFilter('store_type','Mall店')">Mall店</button>
+            <button data-val="照材店" onclick="setFilter('store_type','照材店')">照材店</button>
+            <button data-val="直营店" onclick="setFilter('store_type','直营店')">直营店</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">时间段</span>
+          <div class="filter-seg" id="filter-period">
+            <button class="active" data-val="all" onclick="setFilter('period','all')">全部</button>
+            <button data-val="custom" onclick="setFilter('period','custom')">自定义</button>
+            <button data-val="day" onclick="setFilter('period','day')">按天</button>
+            <button data-val="week" onclick="setFilter('period','week')">按周</button>
+            <button data-val="month" onclick="setFilter('period','month')">按月</button>
+          </div>
+        </div>
+        <div class="filter-group" id="filter-dates" style="display:none">
+          <span class="filter-label" id="filter-date-label">从</span>
+          <input type="date" class="filter-input" id="filter-date-from" onchange="onDateChange()">
+          <span class="filter-label" id="filter-date-to-label" style="display:none">到</span>
+          <input type="date" class="filter-input" id="filter-date-to" onchange="onDateChange()" style="display:none">
+        </div>
+        <button class="filter-reset" onclick="resetFilters()">重置筛选</button>
+        <span class="filter-info" id="filter-info"></span>
+      </div>
+
+      <!-- 经营概览 -->
+      <div class="page active" id="page-overview">
+        <div class="section-title">经营概览</div>
+        <div class="kpi-grid" id="overview-kpi"></div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">活动趋势 <span class="badge">月度</span></div><div class="chart-body" id="chart-trend" style="height:320px"></div></div>
+          <div class="chart-card"><div class="title">活动类型分布 <span class="badge">按类型</span></div><div class="chart-body" id="chart-type-pie" style="height:320px"></div></div>
+        </div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">区域活动量 Top10 <span class="badge">按省区单元</span></div><div class="chart-body" id="chart-region-top" style="height:300px"></div></div>
+         <div class="chart-card"><div class="title">活动状态分布 <span class="badge">全量</span></div><div class="chart-body" id="chart-status" style="height:300px"></div></div>
+       </div>
+        <div class="section-title" style="margin-top:20px">活动转化漏斗</div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">转化漏斗 <span class="badge">全链路</span></div><div class="chart-body" id="chart-funnel" style="height:340px"></div></div>
+          <div class="chart-card"><div class="title">企微 & 参与人数趋势 <span class="badge">月度</span></div><div class="chart-body" id="chart-monthly-wecom" style="height:340px"></div></div>
+        </div>
+        <div class="chart-card" style="margin-top:16px"><div class="title">有效活动 & 无人机趋势 <span class="badge">月度</span></div><div class="chart-body" id="chart-monthly-eff" style="height:300px"></div></div>
+        <div class="section-title" style="margin-top:20px">经营洞察</div>
+        <div class="insight-grid" id="overview-insights"></div>
+        <div class="section-title" style="margin-top:20px">运营建议</div>
+       <div id="overview-recommendations"></div>
+     </div>
+
+      <!-- 每日经营分析 -->
+      <div class="page" id="page-daily">
+        <div class="review-section-title" id="daily-title">每日经营分析</div>
+        <div id="daily-content"></div>
+      </div>
+
+      <!-- 每周经营分析 -->
+      <div class="page" id="page-weekly">
+        <div class="review-section-title" id="weekly-title">每周经营分析</div>
+        <div id="weekly-content"></div>
+      </div>
+
+      <!-- 每月经营分析 -->
+      <div class="page" id="page-monthly">
+        <div class="review-section-title" id="monthly-title">每月经营分析</div>
+        <div id="monthly-content"></div>
+      </div>
+
+      <!-- 活动经营分析 -->
+      <div class="page" id="page-activity">
+        <div class="section-title">活动经营分析</div>
+       <div class="chart-grid cols-2">
+         <div class="chart-card"><div class="title">各类型活动表现 <span class="badge">数量 vs 销售</span></div><div class="chart-body" id="chart-act-type-bar" style="height:340px"></div></div>
+         <div class="chart-card"><div class="title">活动月度销售趋势 <span class="badge">已完成活动</span></div><div class="chart-body" id="chart-act-sales-trend" style="height:340px"></div></div>
+       </div>
+        <div class="chart-grid cols-2" style="margin-top:16px">
+          <div class="chart-card"><div class="title">活动类型占比 <span class="badge">分布</span></div><div class="chart-body" id="chart-act-type-pie" style="height:320px"></div></div>
+          <div class="chart-card"><div class="title">类型 x 月度趋势 <span class="badge">堆叠</span></div><div class="chart-body" id="chart-act-type-month" style="height:320px"></div></div>
+        </div>
+        <div class="chart-card" style="margin-top:16px"><div class="title">企微新增 by 活动类型 <span class="badge">按类型</span></div><div class="chart-body" id="chart-act-wechat" style="height:300px"></div></div>
+      <div class="table-card">
+          <div class="title">活动类型明细</div>
+          <div class="table-wrap"><table id="table-act-type"></table></div>
+        </div>
+       <div id="act-dealer-store-section" style="margin-top:16px"></div>
+      </div>
+
+      <!-- 门店经营分析 -->
+      <div class="page" id="page-store">
+        <div class="section-title">门店经营分析</div>
+        <div class="kpi-grid" id="store-kpi"></div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">门店活动量 Top15 <span class="badge">按活动数</span></div><div class="chart-body" id="chart-store-top" style="height:360px"></div></div>
+         <div class="chart-card"><div class="title">门店评分分布 <span class="badge">A/B/C/D 等级</span></div><div class="chart-body" id="chart-store-level" style="height:360px"></div></div>
+       </div>
+        <div class="chart-grid cols-2" style="margin-top:16px">
+          <div class="chart-card"><div class="title">门店销售额 Top10 <span class="badge">清洗后</span></div><div class="chart-body" id="chart-store-sales" style="height:340px"></div></div>
+          <div class="chart-card"><div class="title">门店企微新增 Top10 <span class="badge">累计</span></div><div class="chart-body" id="chart-store-wechat" style="height:340px"></div></div>
+        </div>
+       <div class="table-card">
+          <div class="title">门店明细 <input type="text" class="search-box" placeholder="搜索门店名称..." id="store-search" oninput="onStoreSearch()"></div>
+          <div class="table-wrap"><table id="table-stores"></table></div>
+          <div class="pagination" id="store-pagination"></div>
+        </div>
+      </div>
+
+      <!-- 代理商经营分析 -->
+      <div class="page" id="page-dealer">
+        <div class="section-title">代理商经营分析</div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">代理商活动量 Top10 <span class="badge">按活动数</span></div><div class="chart-body" id="chart-dealer-top" style="height:360px"></div></div>
+          <div class="chart-card"><div class="title">代理商门店覆盖率 <span class="badge">有活动/总门店</span></div><div class="chart-body" id="chart-dealer-coverage" style="height:360px"></div></div>
+        </div>
+        <div class="chart-grid cols-2" style="margin-top:16px">
+          <div class="chart-card"><div class="title">代理商销售额 Top10 <span class="badge">清洗后</span></div><div class="chart-body" id="chart-dealer-sales" style="height:360px"></div></div>
+          <div class="chart-card"><div class="title">活动质量矩阵 <span class="badge">活动量 vs 销售额</span></div><div class="chart-body" id="chart-dealer-scatter" style="height:360px"></div></div>
+        </div>
+        <div class="table-card">
+          <div class="title">代理商排名</div>
+          <div class="table-wrap"><table id="table-dealers"></table></div>
+        </div>
+      </div>
+
+      <!-- 产品经营分析 -->
+      <div class="page" id="page-product">
+        <div class="section-title">产品经营分析</div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">各产品系列销量对比 <span class="badge">活动中</span></div><div class="chart-body" id="chart-product-sales" style="height:340px"></div></div>
+         <div class="chart-card"><div class="title">产品市场份额 <span class="badge">按销量</span></div><div class="chart-body" id="chart-product-share" style="height:340px"></div></div>
+       </div>
+        <div class="chart-grid cols-2" style="margin-top:16px">
+          <div class="chart-card"><div class="title">产品月度销量趋势 <span class="badge">月度</span></div><div class="chart-body" id="chart-product-monthly" style="height:340px"></div></div>
+          <div class="chart-card"><div class="title">产品 x 活动类型热力图 <span class="badge">交叉分析</span></div><div class="chart-body" id="chart-product-heat" style="height:340px"></div></div>
+        </div>
+        <div class="table-card" style="margin-top:16px">
+          <div class="title">产品 x 活动类型销量明细</div>
+          <div class="table-wrap"><table id="table-product-cross"></table></div>
+        </div>
+       <div class="table-card">
+          <div class="title">产品经营明细</div>
+          <div class="table-wrap"><table id="table-products"></table></div>
+        </div>
+      </div>
+
+      <!-- 区域经营分析 -->
+      <div class="page" id="page-region">
+        <div class="section-title">区域经营分析</div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">省区活动量 Top15 <span class="badge">按省区单元</span></div><div class="chart-body" id="chart-region-bar" style="height:380px"></div></div>
+          <div class="chart-card"><div class="title">省份销售额 Top15 <span class="badge">按省份</span></div><div class="chart-body" id="chart-province-sales" style="height:380px"></div></div>
+        </div>
+        <div class="table-card">
+          <div class="title">区域经营明细</div>
+         <div class="table-wrap"><table id="table-regions"></table></div>
+       </div>
+     </div>
+
+      <!-- 渠道分析 -->
+      <div class="page" id="page-channel">
+        <div class="section-title">渠道经营分析</div>
+        <div class="kpi-grid" id="channel-kpi"></div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">Mall店 vs 照材店经营对比 <span class="badge">渠道对比</span></div><div class="chart-body" id="chart-channel-compare" style="height:360px"></div></div>
+          <div class="chart-card"><div class="title">无人机 vs 普通活动 <span class="badge">活动类型对比</span></div><div class="chart-body" id="chart-drone-compare" style="height:360px"></div></div>
+        </div>
+        <div class="table-card">
+          <div class="title">Mall店 vs 照材店经营明细</div>
+          <div class="table-wrap"><table id="table-channel-compare"></table></div>
+        </div>
+        <div class="table-card" style="margin-top:16px">
+          <div class="title">无人机 vs 普通活动经营明细</div>
+          <div class="table-wrap"><table id="table-drone-compare"></table></div>
+        </div>
+        <div class="section-title" style="margin-top:20px">异业合作品牌排行</div>
+        <div class="chart-grid cols-2">
+          <div class="chart-card"><div class="title">品牌合作次数 Top15 <span class="badge">按合作频次</span></div><div class="chart-body" id="chart-brands" style="height:380px"></div></div>
+          <div class="table-card"><div class="title">异业合作品牌全量排行</div><div class="table-wrap" style="max-height:380px;overflow-y:auto"><table id="table-brands"></table></div></div>
+        </div>
+      </div>
+
+      <!-- 经营诊断 -->
+      <div class="page" id="page-diagnosis">
+        <div class="section-title">经营诊断</div>
+        <div class="section-title" style="font-size:14px;border-bottom:1px solid var(--border)">经营洞察引擎</div>
+        <div class="insight-grid" id="insight-problems"></div>
+        <div class="section-title" style="font-size:14px;border-bottom:1px solid var(--border);margin-top:20px">增长机会</div>
+        <div class="insight-grid" id="insight-opportunities"></div>
+        <div class="section-title" style="font-size:14px;border-bottom:1px solid var(--border);margin-top:20px">风险预警</div>
+        <div class="insight-grid" id="insight-risks"></div>
+        <div class="section-title" style="font-size:14px;border-bottom:1px solid var(--border);margin-top:20px">运营建议</div>
+        <div id="insight-recommendations"></div>
+        <div class="section-title" style="font-size:14px;border-bottom:1px solid var(--border);margin-top:20px">诊断明细</div>
+        <div class="diag-grid" id="diag-summary"></div>
+        <div class="tab-bar" id="diag-tabs"></div>
+        <div class="table-card">
+          <div class="title" id="diag-detail-title">问题明细</div>
+          <div class="issue-list" id="diag-detail"></div>
+        </div>
+      </div>
+
+      <!-- 效率指标分析 -->
+      <div class="page" id="page-efficiency">
+        <div class="review-section-title">效率指标分析 · 相对值评估体系</div>
+        <div id="efficiency-content"></div>
+      </div>
+
+      <!-- 优秀案例中心 -->
+      <div class="page" id="page-excellent">
+        <div class="section-title">优秀案例中心</div>
+        <div class="section-title" style="font-size:14px;border-bottom:1px solid var(--border)">可复制案例</div>
+        <div id="replication-list"></div>
+        <div class="chart-grid cols-2" style="margin-top:16px">
+          <div class="chart-card"><div class="title">优秀活动类型分布 <span class="badge">按活动类型</span></div><div class="chart-body" id="chart-excellent-type" style="height:300px"></div></div>
+          <div class="chart-card"><div class="title">优秀活动区域分布 <span class="badge">按省区</span></div><div class="chart-body" id="chart-excellent-region" style="height:300px"></div></div>
+        </div>
+        <div class="section-title" style="font-size:14px;border-bottom:1px solid var(--border);margin-top:20px">优秀活动 Top10</div>
+        <div id="excellent-list"></div>
+      </div>
+
+      <!-- 异业合作品牌分析 -->
+      <div class="page" id="page-brand">
+        <div class="review-section-title" id="brand-title">异业合作品牌分析</div>
+        <div id="brand-content"></div>
+      </div>
+
+      <!-- Q2 季度经营复盘 -->
+      <div class="page" id="page-q2review">
+        <div class="review-section-title">2026 Q2 季度经营复盘</div>
+        <div id="q2-content"></div>
+      </div>
+
+      <!-- Luna 上市经营复盘 -->
+      <div class="page" id="page-lunareview">
+        <div class="review-section-title">Luna 上市经营复盘</div>
+        <div id="luna-content"></div>
+      </div>
+
+      <!-- 季度实时追踪 -->
+      <div class="page" id="page-qtrack">
+        <div class="review-section-title" id="qtrack-title">季度实时追踪</div>
+        <div id="qtrack-content"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#0ea5e9','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1'];
+const charts = {};
+let storePage = 1, storeSearch = '';
+let diagCurrentTab = '';
+
+let _currentPage = 'overview';
+const currentFilters = { dealer_type: 'all', store_type: 'all', period: 'all', date_from: '', date_to: '', period_value: '' };
+let _snapshot = null, _snapshotPromise = null;
+function hasActiveFilters() { return currentFilters.dealer_type !== 'all' || currentFilters.store_type !== 'all' || currentFilters.period !== 'all'; }
+function buildSnapshotQS() {
+  const p = new URLSearchParams();
+  if (currentFilters.dealer_type !== 'all') p.set('dealer_type', currentFilters.dealer_type);
+  if (currentFilters.store_type !== 'all') p.set('store_type', currentFilters.store_type);
+  if (currentFilters.period !== 'all') { p.set('period', currentFilters.period);
+    if (currentFilters.period === 'custom') { if (currentFilters.date_from) p.set('date_from', currentFilters.date_from); if (currentFilters.date_to) p.set('date_to', currentFilters.date_to); }
+    else { if (currentFilters.period_value) p.set('period_value', currentFilters.period_value); }
+  } return p.toString();
+}
+async function fetchSnapshot() {
+  if (!hasActiveFilters()) { _snapshot = null; return null; }
+  if (_snapshotPromise) return _snapshotPromise;
+  _snapshotPromise = fetchJSON('/api/snapshot?' + buildSnapshotQS()).then(d => { _snapshot = d; _snapshotPromise = null; return d; });
+  return _snapshotPromise;
+}
+async function getData(key, fallbackUrl) {
+  if (hasActiveFilters() && _snapshot && _snapshot[key] !== undefined) {
+    const val = _snapshot[key];
+    if (Array.isArray(val)) return { data: val };
+    return val;
+  }
+  return await fetchJSON(fallbackUrl);
+}
+function setFilter(key, val) {
+  currentFilters[key] = val;
+  const seg = document.getElementById('filter-' + key.replace('_', '-'));
+  if (seg) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+  if (key === 'period') {
+    const dg = document.getElementById('filter-dates');
+    const lf = document.getElementById('filter-date-label');
+    const lt = document.getElementById('filter-date-to-label');
+    const it = document.getElementById('filter-date-to');
+    if (val === 'all') { dg.style.display = 'none'; currentFilters.date_from=''; currentFilters.date_to=''; currentFilters.period_value=''; }
+    else { dg.style.display = 'flex';
+      if (val === 'custom') { lf.textContent = '从'; lt.style.display='inline'; it.style.display='inline'; }
+      else { lf.textContent = val==='day'?'日期':val==='week'?'周内任一天':'月份'; lt.style.display='none'; it.style.display='none'; }
+    }
+  }
+  applyFilters();
+}
+function onDateChange() {
+  const fv = document.getElementById('filter-date-from').value;
+  const tv = document.getElementById('filter-date-to').value;
+  if (currentFilters.period === 'custom') { currentFilters.date_from = fv; currentFilters.date_to = tv; }
+  else { currentFilters.period_value = fv; }
+  applyFilters();
+}
+function resetFilters() {
+  currentFilters.dealer_type='all'; currentFilters.store_type='all'; currentFilters.period='all';
+  currentFilters.date_from=''; currentFilters.date_to=''; currentFilters.period_value='';
+  document.querySelectorAll('.filter-seg button').forEach(b => b.classList.toggle('active', b.dataset.val === 'all'));
+  const dg = document.getElementById('filter-dates'); if (dg) dg.style.display = 'none';
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value = '';
+  applyFilters();
+}
+async function applyFilters() {
+  _snapshot = null; _snapshotPromise = null;
+  if (hasActiveFilters()) await fetchSnapshot();
+  const info = document.getElementById('filter-info');
+  if (_snapshot && !_snapshot.empty) info.innerHTML = '筛选后: <span class="filter-count">' + fmtNum(_snapshot.count) + '</span> 场活动';
+  else if (hasActiveFilters() && _snapshot && _snapshot.empty) info.textContent = '筛选后无数据';
+  else info.textContent = '';
+  const loaders = { overview:loadOverview, activity:loadActivity, store:loadStores, dealer:loadDealers, product:loadProducts, region:loadRegions, channel:loadChannel, diagnosis:loadDiagnosis, excellent:loadExcellent, brand:loadBrand, daily:loadDaily, weekly:loadWeekly, monthly:loadMonthly, efficiency:loadEfficiency, q2review:loadQ2Review, lunareview:loadLunaReview, qtrack:loadQTrack };
+  if (loaders[_currentPage]) loaders[_currentPage]();
+}
+
+// ── Navigation ──────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
+  // Trigger resize for charts
+  setTimeout(() => { Object.values(charts).forEach(c => c && c.resize()); }, 50);
+  // Load data for the page
+  const loaders = {
+    overview: loadOverview, activity: loadActivity, store: loadStores,
+    dealer: loadDealers, product: loadProducts, region: loadRegions, channel: loadChannel,
+    diagnosis: loadDiagnosis, excellent: loadExcellent, brand: loadBrand,
+    daily: loadDaily, weekly: loadWeekly, monthly: loadMonthly,
+    efficiency: loadEfficiency, q2review: loadQ2Review, lunareview: loadLunaReview, qtrack: loadQTrack
+  };
+  _currentPage = page;
+  if (loaders[page]) loaders[page]();
+}
+
+// ── Helpers ─────────────────────────────────
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  return res.json();
+}
+function fmtNum(n) {
+  if (n == null) return '-';
+  if (typeof n !== 'number') n = parseFloat(n);
+  if (isNaN(n)) return '-';
+  if (Math.abs(n) >= 10000) return (n/10000).toFixed(1) + '万';
+  return n.toLocaleString('zh-CN', {maximumFractionDigits: 0});
+}
+function fmtPct(n) {
+  if (n == null) return '-';
+  return (n*100).toFixed(1) + '%';
+}
+function gradeBadge(grade) {
+  if (!grade) return '<span class="grade-badge D">-</span>';
+  return `<span class="grade-badge ${grade}">${grade}</span>`;
+}
+function insightCardHTML(item) {
+  const sev = item.severity || 'info';
+  const action = item.action ? `<div class="i-action">→ ${item.action}</div>` : '';
+  return `<div class="insight-card ${sev}"><div class="i-title">${item.title||''}</div><div class="i-detail">${item.detail||''}</div>${action}</div>`;
+}
+function recCardHTML(item) {
+  return `<div class="rec-card"><div class="rec-priority">${item.priority||1}</div><div class="rec-body"><div class="r-title">${item.title||''}</div><div class="r-detail">${item.detail||''}</div><div class="rec-meta"><span>责任方: ${item.owner||'-'}</span><span>时间: ${item.timeline||'-'}</span></div></div></div>`;
+}
+function initChart(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  if (charts[id]) charts[id].dispose();
+  charts[id] = echarts.init(el);
+  return charts[id];
+}
+
+
+// ── 效率指标分析 ────────────────────────────
+async function loadEfficiency() {
+  const d = await fetchJSON('/api/efficiency');
+  const c = document.getElementById('efficiency-content');
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+
+  const g = d.global;
+  let html = '';
+
+  // 1. 全局效率 KPI
+  html += '<div class="review-section"><div class="review-section-title">一、全局活动效率指标</div>';
+  html += '<div class="kpi-grid">' + [
+    ['场均销售额', '¥'+fmtNum(g.sales_per_activity), '元/场', 'primary'],
+    ['场均参与人数', fmtNum(g.participants_per_activity), '人/场', 'info'],
+    ['场均企微新增', fmtNum(g.wechat_per_activity), '人/场', 'warning'],
+    ['场均转化主机', fmtNum(g.hosts_per_activity), '台/场', 'success'],
+    ['企微加微率', fmtPct(g.wechat_add_rate), '企微/参与', 'warning'],
+    ['主机转化率', fmtPct(g.host_conversion_rate), '主机/参与', 'success'],
+    ['人均销售额', '¥'+fmtNum(g.sales_per_participant), '元/人', 'primary'],
+    ['单台销售额', '¥'+fmtNum(g.sales_per_host), '元/台', 'danger'],
+  ].map(x => kpiCardHTML(x)).join('') + '</div></div>';
+
+  // 2. 活动类型效率排行
+  const types = d.by_type || [];
+  html += '<div class="review-section"><div class="review-section-title">二、活动类型效率排行</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">场均销售额 vs 企微加微率 <span class="badge">效率四象限</span></div><div class="chart-body" id="eff-type-scatter" style="height:360px"></div></div>';
+  html += '<div class="chart-card"><div class="title">各类型场均指标对比 <span class="badge">雷达</span></div><div class="chart-body" id="eff-type-radar" style="height:360px"></div></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="title">活动类型效率明细</div><div class="table-wrap"><table><thead><tr>';
+  html += '<th>活动类型</th><th class="text-right">场次</th><th class="text-right">场均销售</th><th class="text-right">场均参与</th><th class="text-right">场均企微</th><th class="text-right">企微加微率</th><th class="text-right">主机转化率</th><th class="text-right">人均销售</th>';
+  html += '</tr></thead><tbody>';
+  types.forEach(r => {
+    html += '<tr><td>'+(r.activity_type||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">¥'+fmtNum(r.sales_per_activity)+'</td><td class="text-right">'+fmtNum(r.participants_per_activity)+'</td><td class="text-right">'+fmtNum(r.wechat_per_activity)+'</td><td class="text-right">'+fmtPct(r.wechat_add_rate)+'</td><td class="text-right">'+fmtPct(r.host_conversion_rate)+'</td><td class="text-right">¥'+fmtNum(r.sales_per_participant)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // 3. 代理商效率排行
+  const dealers = d.by_dealer || [];
+  html += '<div class="review-section"><div class="review-section-title">三、代理商效率排行</div>';
+  html += '<div class="chart-card" style="margin-bottom:12px"><div class="title">代理商场均销售 vs 门店覆盖率 <span class="badge">效率分布</span></div><div class="chart-body" id="eff-dealer-scatter" style="height:380px"></div></div>';
+  html += '<div class="table-card"><div class="title">代理商效率明细（按场均销售排序）</div><div class="table-wrap"><table><thead><tr>';
+  html += '<th>代理商</th><th class="text-right">活动数</th><th class="text-right">场均销售</th><th class="text-right">店均销售</th><th class="text-right">企微加微率</th><th class="text-right">主机转化率</th><th class="text-right">活动/门店</th><th class="text-right">覆盖率</th>';
+  html += '</tr></thead><tbody>';
+  dealers.forEach(r => {
+    html += '<tr><td>'+(r.dealer||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">¥'+fmtNum(r.sales_per_activity)+'</td><td class="text-right">¥'+fmtNum(r.sales_per_store)+'</td><td class="text-right">'+fmtPct(r.wechat_add_rate)+'</td><td class="text-right">'+fmtPct(r.host_conversion_rate)+'</td><td class="text-right">'+fmtNum(r.activity_per_store)+'</td><td class="text-right">'+fmtPct(r.store_coverage_rate)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // 4. 区域效率排行
+  const regions = d.by_region || [];
+  html += '<div class="review-section"><div class="review-section-title">四、区域活动质量评估</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">省区场均销售 vs 活动密度 <span class="badge">区域质量</span></div><div class="chart-body" id="eff-region-scatter" style="height:380px"></div></div>';
+  html += '<div class="chart-card"><div class="title">省区企微加微率 vs 主机转化率 <span class="badge">转化效率</span></div><div class="chart-body" id="eff-region-conv" style="height:380px"></div></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="title">省区效率明细（按场均销售排序）</div><div class="table-wrap"><table><thead><tr>';
+  html += '<th>省区</th><th class="text-right">活动数</th><th class="text-right">场均销售</th><th class="text-right">店均销售</th><th class="text-right">场均参与</th><th class="text-right">企微加微率</th><th class="text-right">主机转化率</th><th class="text-right">活动/代理商</th>';
+  html += '</tr></thead><tbody>';
+  regions.forEach(r => {
+    html += '<tr><td>'+(r.region||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">¥'+fmtNum(r.sales_per_activity)+'</td><td class="text-right">¥'+fmtNum(r.sales_per_store)+'</td><td class="text-right">'+fmtNum(r.participants_per_activity)+'</td><td class="text-right">'+fmtPct(r.wechat_add_rate)+'</td><td class="text-right">'+fmtPct(r.host_conversion_rate)+'</td><td class="text-right">'+fmtNum(r.activity_per_dealer)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  c.innerHTML = html;
+
+  // Charts
+  // Type scatter: sales_per_activity vs wechat_add_rate
+  const ts = initChart('eff-type-scatter');
+  if (ts) {
+    const scatterData = types.map(r => ({name: r.activity_type, value: [r.sales_per_activity, r.wechat_add_rate, r.activity_count]}));
+    ts.setOption({
+      tooltip: { trigger: 'item', formatter: p => p.data.name + '<br/>场均销售: ¥' + fmtNum(p.data.value[0]) + '<br/>企微加微率: ' + fmtPct(p.data.value[1]) + '<br/>场次: ' + fmtNum(p.data.value[2]) },
+      grid: { left: 60, right: 30, bottom: 50, top: 30 },
+      xAxis: { type: 'value', name: '场均销售额', nameLocation: 'middle', nameGap: 30 },
+      yAxis: { type: 'value', name: '企微加微率', axisLabel: { formatter: v => (v*100).toFixed(0)+'%' } },
+      series: [{ type: 'scatter', symbolSize: p => Math.max(10, Math.min(50, p[2]/5)), data: scatterData, itemStyle: { color: COLORS[4], opacity: 0.7 }, label: { show: true, formatter: p => p.data.name, fontSize: 10, position: 'top' } }]
+    });
+  }
+
+  // Type radar
+  const tr = initChart('eff-type-radar');
+  if (tr && types.length > 0) {
+    const top5 = types.slice(0, 5);
+    const maxSales = Math.max(...top5.map(r => r.sales_per_activity));
+    const maxWechat = Math.max(...top5.map(r => r.wechat_per_activity));
+    const maxHost = Math.max(...top5.map(r => r.host_conversion_rate));
+    const maxPart = Math.max(...top5.map(r => r.participants_per_activity));
+    const maxSP = Math.max(...top5.map(r => r.sales_per_participant));
+    tr.setOption({
+      tooltip: { trigger: 'item' },
+      legend: { data: top5.map(r => r.activity_type), bottom: 0, textStyle: { fontSize: 10 } },
+      radar: { indicator: [
+        { name: '场均销售', max: maxSales },
+        { name: '场均企微', max: maxWechat },
+        { name: '主机转化', max: maxHost },
+        { name: '场均参与', max: maxPart },
+        { name: '人均销售', max: maxSP },
+      ], radius: '65%' },
+      series: [{ type: 'radar', data: top5.map((r, i) => ({ name: r.activity_type, value: [r.sales_per_activity, r.wechat_per_activity, r.host_conversion_rate, r.participants_per_activity, r.sales_per_participant], itemStyle: { color: COLORS[i] } })) }]
+    });
+  }
+
+  // Dealer scatter: sales_per_activity vs store_coverage_rate
+  const ds = initChart('eff-dealer-scatter');
+  if (ds) {
+    const dData = dealers.map(r => ({name: (r.dealer||'').slice(0,8), value: [r.sales_per_activity, r.store_coverage_rate, r.activity_count]}));
+    ds.setOption({
+      tooltip: { trigger: 'item', formatter: p => p.data.name + '<br/>场均销售: ¥' + fmtNum(p.data.value[0]) + '<br/>覆盖率: ' + fmtPct(p.data.value[1]) + '<br/>活动数: ' + fmtNum(p.data.value[2]) },
+      grid: { left: 60, right: 30, bottom: 50, top: 30 },
+      xAxis: { type: 'value', name: '场均销售额', nameLocation: 'middle', nameGap: 30 },
+      yAxis: { type: 'value', name: '门店覆盖率', axisLabel: { formatter: v => (v*100).toFixed(0)+'%' } },
+      series: [{ type: 'scatter', symbolSize: p => Math.max(8, Math.min(40, p[2]/10)), data: dData, itemStyle: { color: COLORS[0], opacity: 0.7 }, label: { show: true, formatter: p => p.data.name, fontSize: 9, position: 'top' } }]
+    });
+  }
+
+  // Region scatter: sales_per_activity vs activity_per_dealer
+  const rs = initChart('eff-region-scatter');
+  if (rs) {
+    const rData = regions.map(r => ({name: (r.region||'').slice(0,6), value: [r.sales_per_activity, r.activity_per_dealer, r.activity_count]}));
+    rs.setOption({
+      tooltip: { trigger: 'item', formatter: p => p.data.name + '<br/>场均销售: ¥' + fmtNum(p.data.value[0]) + '<br/>活动/代理商: ' + fmtNum(p.data.value[1]) + '<br/>活动数: ' + fmtNum(p.data.value[2]) },
+      grid: { left: 60, right: 30, bottom: 50, top: 30 },
+      xAxis: { type: 'value', name: '场均销售额', nameLocation: 'middle', nameGap: 30 },
+      yAxis: { type: 'value', name: '活动/代理商' },
+      series: [{ type: 'scatter', symbolSize: p => Math.max(8, Math.min(40, p[2]/10)), data: rData, itemStyle: { color: COLORS[2], opacity: 0.7 }, label: { show: true, formatter: p => p.data.name, fontSize: 9, position: 'top' } }]
+    });
+  }
+
+  // Region conversion: wechat_add_rate vs host_conversion_rate
+  const rc = initChart('eff-region-conv');
+  if (rc) {
+    const rData = regions.map(r => ({name: (r.region||'').slice(0,6), value: [r.wechat_add_rate, r.host_conversion_rate, r.activity_count]}));
+    rc.setOption({
+      tooltip: { trigger: 'item', formatter: p => p.data.name + '<br/>企微加微率: ' + fmtPct(p.data.value[0]) + '<br/>主机转化率: ' + fmtPct(p.data.value[1]) + '<br/>活动数: ' + fmtNum(p.data.value[2]) },
+      grid: { left: 60, right: 30, bottom: 50, top: 30 },
+      xAxis: { type: 'value', name: '企微加微率', axisLabel: { formatter: v => (v*100).toFixed(0)+'%' } },
+      yAxis: { type: 'value', name: '主机转化率', axisLabel: { formatter: v => (v*100).toFixed(0)+'%' } },
+      series: [{ type: 'scatter', symbolSize: p => Math.max(8, Math.min(40, p[2]/10)), data: rData, itemStyle: { color: COLORS[6], opacity: 0.7 }, label: { show: true, formatter: p => p.data.name, fontSize: 9, position: 'top' } }]
+    });
+  }
+}
+
+// ── Q2 季度经营复盘 ────────────────────────
+async function loadQ2Review() {
+  return _loadQ2Review();
+}
+
+// ── 每日经营分析 ────────────────────────────
+async function loadDaily() {
+  let dailyUrl = '/api/analysis/daily';
+  let dp = [];
+  if (currentFilters.period === 'day' && currentFilters.period_value) dp.push('date=' + currentFilters.period_value);
+  else if (currentFilters.period === 'custom' && currentFilters.date_from) dp.push('date=' + currentFilters.date_from);
+  if (currentFilters.dealer_type !== 'all') dp.push('dealer_type=' + encodeURIComponent(currentFilters.dealer_type));
+  if (dp.length) dailyUrl += '?' + dp.join('&');
+  const d = await fetchJSON(dailyUrl);
+  const title = document.getElementById('daily-title');
+  const c = document.getElementById('daily-content');
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+  if (title) title.textContent = '每日经营分析 · ' + d.label;
+  const data = d.data;
+  let html = '';
+
+  // 今日 KPI
+  html += '<div class="review-section"><div class="analysis-section-title">今日经营数据</div>';
+  html += '<div class="kpi-grid">' + [
+    ['今日活动', fmtNum(data.today_count), '场', 'primary'],
+    ['今日销售额', '¥'+fmtNum(data.today_sales), '元', 'success'],
+    ['参与人数', fmtNum(data.today_participants), '人', 'info'],
+    ['企微新增', fmtNum(data.today_wechat), '人', 'warning'],
+    ['转化主机', fmtNum(data.today_hosts), '台', 'success'],
+    ['待复盘', fmtNum(data.pending_review_count), '场', 'danger'],
+    ['异常活动', fmtNum(data.anomaly_count), '场', 'danger'],
+    ['无活动门店', fmtNum(data.inactive_store_count), '家', 'warning'],
+ ].map(x => kpiCardHTML(x)).join('') + '</div></div>';
+
+  // 效率测算
+  html += '<div class="review-section"><div class="analysis-section-title">效率测算</div>';
+  html += '<div class="kpi-grid">' + [
+    ['场均销售额', data.today_count>0 ? '¥'+fmtNum(data.today_sales/data.today_count) : '¥0', '元/场', 'primary'],
+    ['场均主机', data.today_count>0 ? fmtNum(data.today_hosts/data.today_count) : '0', '台/场', 'success'],
+    ['企微蓄水率', data.today_participants>0 ? fmtPct(data.today_wechat/data.today_participants) : '-', '企微/参与', 'warning'],
+    ['主机转化率', data.today_participants>0 ? fmtPct(data.today_hosts/data.today_participants) : '-', '主机/参与', 'danger'],
+  ].map(x => kpiCardHTML(x)).join('') + '</div></div>';
+
+  // 转化漏斗
+  html += '<div class="review-section"><div class="analysis-section-title">转化漏斗分析</div>';
+  html += '<div class="chart-card"><div class="title">活动转化漏斗 <span class="badge">'+d.label+'</span></div><div class="chart-body" id="daily-funnel-chart" style="height:300px"></div></div>';
+  html += '</div>';
+
+  // 经营结论
+  html += '<div class="review-section"><div class="analysis-section-title">经营结论</div>';
+  (d.findings||[]).forEach(f => { html += findingHTML(f); });
+  html += '</div>';
+
+  // 今日活动清单
+  html += '<div class="review-section"><div class="analysis-section-title">今日活动清单</div>';
+  if ((data.today_activities||[]).length === 0) {
+    html += '<div class="review-summary">今日无新增活动记录</div>';
+  } else {
+    html += tableHTML(['活动','类型','状态','门店','销售额','参与','企微'],
+      (data.today_activities||[]).map(r => [str(r.activity_desc,28), r.activity_type||'-', r.activity_status||'-', r.store_name||'-', '¥'+fmtNum(r.sales), fmtNum(r.participants), fmtNum(r.wechat)]));
+  }
+  html += '</div>';
+
+  // 待复盘活动
+  html += '<div class="review-section"><div class="analysis-section-title">待复盘活动（已完成但缺销售/参与记录）</div>';
+  if ((data.pending_review||[]).length === 0) {
+    html += '<div class="review-summary">暂无待复盘活动</div>';
+  } else {
+    html += tableHTML(['活动','类型','门店','日期','销售额','参与','企微'],
+      (data.pending_review||[]).map(r => [str(r.activity_desc,28), r.activity_type||'-', r.store_name||'-', fmtDate(r.activity_date), '¥'+fmtNum(r.sales), fmtNum(r.participants), fmtNum(r.wechat)]));
+  }
+  html += '</div>';
+
+  // 异常活动
+  if ((data.anomaly_activities||[]).length > 0) {
+    html += '<div class="review-section"><div class="analysis-section-title">异常活动</div>';
+    html += tableHTML(['活动','类型','门店','销售额','参与','异常原因'],
+      (data.anomaly_activities||[]).map(r => [str(r.activity_desc,28), r.activity_type||'-', r.store_name||'-', '¥'+fmtNum(r.sales), fmtNum(r.participants), r.anomaly_reason||'-']));
+    html += '</div>';
+  }
+
+  // 连续无活动门店
+  if ((data.inactive_stores||[]).length > 0) {
+    html += '<div class="review-section"><div class="analysis-section-title">连续无活动门店（Top30）</div>';
+    html += '<div class="pill-list">' + (data.inactive_stores||[]).map(s => '<span class="pill risk">'+s+'</span>').join('') + '</div></div>';
+  }
+
+  // 活动量排名
+  html += '<div class="review-section"><div class="analysis-section-title">活动量排名（近7天）</div>';
+  if ((data.activity_count_store||[]).length === 0) {
+    html += '<div class="review-summary">无门店活动量数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">门店活动量 Top20</div>';
+    html += tableHTML(['门店','活动数','销售额','参与','企微'], (data.activity_count_store||[]).map(r => [r.store_name||'-', fmtNum(r.activity_count), '\u00a5'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.activity_count_dealer||[]).length === 0) {
+    html += '<div class="review-summary">无代理商活动量数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">代理商活动量 Top20</div>';
+    html += tableHTML(['代理商','活动数','销售额','参与','企微','门店数'], (data.activity_count_dealer||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), '\u00a5'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtNum(r.stores)]));
+  }
+  html += '</div>';
+
+  // 零活动名单
+  html += '<div class="review-section"><div class="analysis-section-title">零活动门店与代理商</div>';
+  if ((data.zero_activity_stores||[]).length === 0) {
+    html += '<div class="review-summary">无零活动门店</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">零活动门店 ('+data.zero_activity_stores.length+'家)</div>';
+    html += tableHTML(['门店','代理商','省区','区域','类型'], (data.zero_activity_stores||[]).slice(0,30).map(r => [r.store_name||'-', r.dealer||'-', r.province_unit||'-', r.region||'-', r.store_category||'-']));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.zero_activity_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无零活动代理商</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">零活动代理商 ('+data.zero_activity_dealers.length+'家)</div>';
+    html += tableHTML(['代理商','门店总数','省区'], (data.zero_activity_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.store_count), r.province_units||'-']));
+  }
+  html += '</div>';
+
+  // 活动转化低
+  html += '<div class="review-section"><div class="analysis-section-title">活动转化低（转化率升序）</div>';
+  if ((data.low_conversion_stores||[]).length === 0) {
+    html += '<div class="review-summary">无转化数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">转化率最低门店 Top20</div>';
+    html += tableHTML(['门店','活动数','参与','主机','转化率'], (data.low_conversion_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.low_conversion_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无代理商转化数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">转化率最低代理商 Top20</div>';
+    html += tableHTML(['代理商','活动数','参与','主机','转化率'], (data.low_conversion_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+  }
+  html += '</div>';
+
+  // 企微蓄水低
+  html += '<div class="review-section"><div class="analysis-section-title">企微蓄水低（蓄水率升序）</div>';
+  if ((data.low_wechat_stores||[]).length === 0) {
+    html += '<div class="review-summary">无企微数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">企微蓄水率最低门店 Top20</div>';
+    html += tableHTML(['门店','活动数','参与','企微','蓄水率'], (data.low_wechat_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.low_wechat_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无代理商企微数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">企微蓄水率最低代理商 Top20</div>';
+    html += tableHTML(['代理商','活动数','参与','企微','蓄水率'], (data.low_wechat_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+  }
+  html += '</div>';
+
+  // 今日运营建议
+  html += '<div class="review-section"><div class="analysis-section-title">今日运营建议</div>';
+  (d.recommendations||[]).forEach(r => { html += recCardHTML(r); });
+  html += '</div>';
+
+  c.innerHTML = html;
+
+  // 每日转化漏斗
+  const dfc = initChart('daily-funnel-chart');
+  if (dfc) {
+    dfc.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+      series: [{ type: 'funnel', left: '10%', right: '10%', top: 20, bottom: 20,
+        data: [
+          { name: '活动总数', value: data.today_count||0, itemStyle: { color: COLORS[0] } },
+          { name: '有参与', value: data.today_count>0 ? Math.min(data.today_count, data.today_activities?.filter(a=>(a.participants||0)>0).length) : 0, itemStyle: { color: COLORS[1] } },
+          { name: '有企微', value: data.today_count>0 ? Math.min(data.today_count, data.today_activities?.filter(a=>(a.wechat||a.wechat_adds||0)>0).length) : 0, itemStyle: { color: COLORS[4] } },
+          { name: '有主机', value: data.today_hosts>0 ? data.today_count : 0, itemStyle: { color: COLORS[3] } },
+          { name: '有销售额', value: data.today_count>0 ? Math.min(data.today_count, data.today_activities?.filter(a=>(a.sales||a.sales_clean||0)>0).length) : 0, itemStyle: { color: COLORS[2] } }
+        ],
+        label: { show: true, position: 'inside', formatter: '{b}\n{c}' }
+      }]
+    });
+  }
+}
+
+// ── 每周经营分析 ────────────────────────────
+async function loadWeekly() {
+  let weeklyUrl = '/api/analysis/weekly';
+  let wp = [];
+  if (currentFilters.period === 'week' && currentFilters.period_value) wp.push('date=' + currentFilters.period_value);
+  else if (currentFilters.period === 'custom' && currentFilters.date_from) wp.push('date=' + currentFilters.date_from);
+  if (currentFilters.dealer_type !== 'all') wp.push('dealer_type=' + encodeURIComponent(currentFilters.dealer_type));
+  if (wp.length) weeklyUrl += '?' + wp.join('&');
+  const d = await fetchJSON(weeklyUrl);
+  const title = document.getElementById('weekly-title');
+  const c = document.getElementById('weekly-content');
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+  if (title) title.textContent = '每周经营分析 · ' + d.label;
+  const data = d.data;
+  const ch = data.changes || {};
+  let html = '';
+
+  // 本周 KPI
+  html += '<div class="review-section"><div class="analysis-section-title">本周经营数据</div>';
+  html += '<div class="kpi-grid">' + [
+    ['活动场次', fmtNum(data.activity_count), chgTag(ch.count), 'primary'],
+    ['销售额', '¥'+fmtNum(data.total_sales), chgTag(ch.sales), 'success'],
+    ['参与人数', fmtNum(data.total_participants), chgTag(ch.participants), 'info'],
+    ['企微新增', fmtNum(data.total_wechat), '', 'warning'],
+    ['转化主机', fmtNum(data.total_hosts), '', 'success'],
+    ['覆盖门店', fmtNum(data.stores_covered), chgTag(ch.stores), 'primary'],
+    ['覆盖代理商', fmtNum(data.dealers_covered), '', 'info'],
+    ['风险门店', fmtNum(data.risk_store_count), '本周零销售', 'danger'],
+    ['健康度', (data.health_score!=null?data.health_score.toFixed(1):'0'), '有效活动占比', (data.health_score||0)>=70?'success':(data.health_score||0)>=40?'warning':'danger'],
+ ].map(x => kpiCardHTML(x)).join('') + '</div></div>';
+
+  // 效率测算
+  html += '<div class="review-section"><div class="analysis-section-title">效率测算</div>';
+  html += '<div class="kpi-grid">' + [
+    ['场均销售额', data.activity_count>0 ? '¥'+fmtNum(data.total_sales/data.activity_count) : '¥0', '元/场', 'primary'],
+    ['场均主机', data.activity_count>0 ? fmtNum(data.total_hosts/data.activity_count) : '0', '台/场', 'success'],
+    ['企微蓄水率', data.total_participants>0 ? fmtPct(data.total_wechat/data.total_participants) : '-', '企微/参与', 'warning'],
+    ['主机转化率', data.total_participants>0 ? fmtPct(data.total_hosts/data.total_participants) : '-', '主机/参与', 'danger'],
+  ].map(x => kpiCardHTML(x)).join('') + '</div></div>';
+
+  // 转化漏斗
+  html += '<div class="review-section"><div class="analysis-section-title">转化漏斗分析</div>';
+  html += '<div class="chart-card"><div class="title">活动转化漏斗 <span class="badge">'+d.label+'</span></div><div class="chart-body" id="weekly-funnel-chart" style="height:300px"></div></div>';
+  html += '</div>';
+
+  // 经营结论
+  html += '<div class="review-section"><div class="analysis-section-title">经营结论</div>';
+  (d.findings||[]).forEach(f => { html += findingHTML(f); });
+  html += '</div>';
+
+  // 代理商表现
+  html += '<div class="review-section"><div class="analysis-section-title">代理商表现 Top10</div>';
+  if ((data.dealer_perf||[]).length === 0) {
+    html += '<div class="review-summary">本周无代理商活动数据</div>';
+  } else {
+    html += tableHTML(['代理商','活动数','销售额','参与人数','企微','覆盖门店'],
+      (data.dealer_perf||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtNum(r.stores)]));
+  }
+  html += '</div>';
+
+  // 优秀活动
+  html += '<div class="review-section"><div class="analysis-section-title">优秀活动 Top10</div>';
+  if ((data.excellent_activities||[]).length === 0) {
+    html += '<div class="review-summary">本周无优秀活动</div>';
+  } else {
+    html += tableHTML(['活动','类型','门店','销售额','参与','企微','日期'],
+      (data.excellent_activities||[]).map(r => [str(r.activity_desc,28), r.activity_type||'-', r.store_name||'-', '¥'+fmtNum(r.sales), fmtNum(r.participants), fmtNum(r.wechat), fmtDate(r.activity_date)]));
+  }
+  html += '</div>';
+
+  // 异常活动
+  if ((data.anomaly_activities||[]).length > 0) {
+    html += '<div class="review-section"><div class="analysis-section-title">异常活动</div>';
+    html += tableHTML(['活动','类型','门店','销售额','参与','异常原因'],
+      (data.anomaly_activities||[]).map(r => [str(r.activity_desc,28), r.activity_type||'-', r.store_name||'-', '¥'+fmtNum(r.sales), fmtNum(r.participants), r.anomaly_reason||'-']));
+    html += '</div>';
+  }
+
+  // 风险门店
+  if ((data.risk_stores||[]).length > 0) {
+    html += '<div class="review-section"><div class="analysis-section-title">风险门店（本周零销售）</div>';
+    html += tableHTML(['门店','活动数'], (data.risk_stores||[]).map(r => [r.store_name||'-', fmtNum(r.count)]));
+    html += '</div>';
+  }
+
+
+  // 活动量排名
+  html += '<div class="review-section"><div class="analysis-section-title">活动量排名</div>';
+  if ((data.activity_count_store||[]).length === 0) {
+    html += '<div class="review-summary">无门店活动量数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">门店活动量 Top20</div>';
+    html += tableHTML(['门店','活动数','销售额','参与','企微'], (data.activity_count_store||[]).map(r => [r.store_name||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.activity_count_dealer||[]).length === 0) {
+    html += '<div class="review-summary">无代理商活动量数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">代理商活动量 Top20</div>';
+    html += tableHTML(['代理商','活动数','销售额','参与','企微','门店数'], (data.activity_count_dealer||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtNum(r.stores)]));
+  }
+  html += '</div>';
+
+  // 零活动名单
+  html += '<div class="review-section"><div class="analysis-section-title">零活动门店与代理商</div>';
+  if ((data.zero_activity_stores||[]).length === 0) {
+    html += '<div class="review-summary">无零活动门店</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">零活动门店 ('+data.zero_activity_stores.length+'家)</div>';
+    html += tableHTML(['门店','代理商','省区','区域','类型'], (data.zero_activity_stores||[]).slice(0,30).map(r => [r.store_name||'-', r.dealer||'-', r.province_unit||'-', r.region||'-', r.store_category||'-']));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.zero_activity_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无零活动代理商</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">零活动代理商 ('+data.zero_activity_dealers.length+'家)</div>';
+    html += tableHTML(['代理商','门店总数','省区'], (data.zero_activity_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.store_count), r.province_units||'-']));
+  }
+  html += '</div>';
+
+  // 活动转化低
+  html += '<div class="review-section"><div class="analysis-section-title">活动转化低（转化率升序）</div>';
+  if ((data.low_conversion_stores||[]).length === 0) {
+    html += '<div class="review-summary">无转化数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">转化率最低门店 Top20</div>';
+    html += tableHTML(['门店','活动数','参与','主机','转化率'], (data.low_conversion_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.low_conversion_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无代理商转化数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">转化率最低代理商 Top20</div>';
+    html += tableHTML(['代理商','活动数','参与','主机','转化率'], (data.low_conversion_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+  }
+  html += '</div>';
+
+  // 企微蓄水低
+  html += '<div class="review-section"><div class="analysis-section-title">企微蓄水低（蓄水率升序）</div>';
+  if ((data.low_wechat_stores||[]).length === 0) {
+    html += '<div class="review-summary">无企微数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">企微蓄水率最低门店 Top20</div>';
+    html += tableHTML(['门店','活动数','参与','企微','蓄水率'], (data.low_wechat_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.low_wechat_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无代理商企微数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">企微蓄水率最低代理商 Top20</div>';
+    html += tableHTML(['代理商','活动数','参与','企微','蓄水率'], (data.low_wechat_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+  }
+  html += '</div>';
+  // 下周行动建议
+  html += '<div class="review-section"><div class="analysis-section-title">下周行动建议</div>';
+  (d.recommendations||[]).forEach(r => { html += recCardHTML(r); });
+  html += '</div>';
+
+  // 周报晾晒推送（双模板）
+  html += '<div class="review-section"><div class="analysis-section-title">周报晾晒推送（双模板）</div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">';
+  html += '<select id="push-tpl-select" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"><option value="dealer">代理商版（晾晒）</option><option value="internal">内部版（管理）</option></select>';
+  html += '<button class="filter-btn" onclick="previewTemplate()" style="padding:6px 16px">预览</button>';
+  html += '<button class="filter-btn" onclick="pushTemplate(true)" style="padding:6px 16px">Dry-Run</button>';
+  html += '<button class="filter-btn" onclick="pushTemplate(false)" style="padding:6px 16px;background:#4f46e5;color:#fff">推送</button>';
+  html += '</div>';
+  html += '<div id="weekly-push-preview" style="background:#f8f9fa;border-radius:8px;padding:16px;min-height:60px;font-size:13px;line-height:1.8;white-space:pre-wrap;display:none"></div>';
+  html += '<div id="weekly-push-result" style="margin-top:8px;font-size:13px"></div>';
+  html += '</div>';
+
+  c.innerHTML = html;
+ 
+  // 每周转化漏斗
+  const wfc = initChart('weekly-funnel-chart');
+  if (wfc) {
+    wfc.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+      series: [{ type: 'funnel', left: '10%', right: '10%', top: 20, bottom: 20,
+        data: [
+          { name: '活动总数', value: data.activity_count||0, itemStyle: { color: COLORS[0] } },
+          { name: '完成数', value: data.completed_count||0, itemStyle: { color: COLORS[1] } },
+          { name: '参与人数', value: data.total_participants||0, itemStyle: { color: COLORS[2] } },
+          { name: '企微新增', value: data.total_wechat||0, itemStyle: { color: COLORS[3] } },
+          { name: '转化主机', value: data.total_hosts||0, itemStyle: { color: COLORS[4] } },
+        ]
+      }]
+    });
+  }
+}
+
+// ── 周报晾晒推送（双模板）────────────────────────────
+function getPushTemplate() {
+  const sel = document.getElementById('push-tpl-select');
+  return sel ? sel.value : 'dealer';
+}
+
+async function previewTemplate() {
+  const tpl = getPushTemplate();
+  const prev = document.getElementById('weekly-push-preview');
+  const res = document.getElementById('weekly-push-result');
+  if (prev) { prev.style.display = 'block'; prev.textContent = '加载中...'; }
+  if (res) res.innerHTML = '';
+  try {
+    const r = await fetch('/api/weekly_report/preview?template=' + tpl);
+    const d = await r.json();
+    if (prev && d.markdown) prev.textContent = d.markdown;
+  } catch(e) {
+    if (prev) prev.textContent = '加载失败: ' + e.message;
+  }
+}
+
+async function pushTemplate(dryRun) {
+  const tpl = getPushTemplate();
+  const res = document.getElementById('weekly-push-result');
+  if (res) res.innerHTML = '<span style="color:#6b7280">推送中...</span>';
+  if (!dryRun && !confirm('确认推送' + (tpl==='dealer'?'代理商版':'内部版') + '到飞书？')) {
+    if (res) res.innerHTML = '';
+    return;
+  }
+  try {
+    const url = '/api/weekly_report/push_template?template=' + tpl + (dryRun ? '&dry_run=1' : '');
+    const r = await fetch(url, { method: 'POST' });
+    const d = await r.json();
+    if (d.push_ok) {
+      if (res) res.innerHTML = '<span style="color:#059669;font-weight:600">✓ 推送成功</span> ' + (d.template==='dealer'?'代理商版':'内部版') + ' | ' + d.label + ' | 活动' + (d.summary?.total_activities||0) + '场 | 活跃代理商' + (d.summary?.total_dealers_active||0) + '/' + (d.summary?.total_dealers||0);
+    } else {
+      if (res) res.innerHTML = '<span style="color:#dc2626;font-weight:600">✗ 推送失败</span> ' + (d.push_error||'');
+    }
+  } catch(e) {
+    if (res) res.innerHTML = '<span style="color:#dc2626">推送异常: ' + e.message + '</span>';
+  }
+}
+
+// ── 月报推送 ────────────────────────────────
+function getMonthlyPushTemplate() {
+  const sel = document.getElementById('monthly-push-tpl');
+  return sel ? sel.value : 'dealer';
+}
+async function previewMonthlyPush() {
+  const tpl = getMonthlyPushTemplate();
+  const prev = document.getElementById('monthly-push-preview');
+  const res = document.getElementById('monthly-push-result');
+  if (res) res.innerHTML = '';
+  if (prev) { prev.style.display = 'block'; prev.textContent = '加载中...'; }
+  try {
+    const r = await fetch('/api/monthly_report/preview?template=' + tpl);
+    const d = await r.json();
+    if (prev) {
+      prev.textContent = d.markdown || '(空)';
+      prev.scrollTop = 0;
+    }
+  } catch(e) {
+    if (prev) prev.textContent = '加载失败: ' + e.message;
+  }
+}
+async function monthlyPushDryRun() {
+  await _monthlyPush(true);
+}
+async function monthlyPush(dryRun) {
+  await _monthlyPush(dryRun);
+}
+async function _monthlyPush(dryRun) {
+  const tpl = getMonthlyPushTemplate();
+  const res = document.getElementById('monthly-push-result');
+  if (res) res.innerHTML = '<span style="color:#6b7280">推送中...</span>';
+  if (!dryRun && !confirm('确认推送' + (tpl==='dealer'?'代理商版':'内部版') + '月报到飞书？')) {
+    if (res) res.innerHTML = '';
+    return;
+  }
+  try {
+    const url = '/api/monthly_report/push_template?template=' + tpl + (dryRun ? '&dry_run=1' : '');
+    const r = await fetch(url, { method: 'POST' });
+    const d = await r.json();
+    if (d.push_ok) {
+      if (res) res.innerHTML = '<span style="color:#059669;font-weight:600">✓ 推送成功</span> ' + (d.template==='dealer'?'代理商版':'内部版') + ' | ' + d.label + ' | 活动' + (d.summary?.total_activities||0) + '场 | 活跃代理商' + (d.summary?.total_dealers_active||0) + '/' + (d.summary?.total_dealers||0);
+    } else {
+      if (res) res.innerHTML = '<span style="color:#dc2626;font-weight:600">✗ 推送失败</span> ' + (d.push_error||'');
+    }
+  } catch(e) {
+    if (res) res.innerHTML = '<span style="color:#dc2626">推送异常: ' + e.message + '</span>';
+  }
+}
+
+// ── 每月经营分析 ────────────────────────────
+async function loadMonthly() {
+  let monthlyUrl = '/api/analysis/monthly';
+  let mp_ = [];
+  if (currentFilters.period === 'month' && currentFilters.period_value) {
+    const mp = new Date(currentFilters.period_value);
+    mp_.push('year=' + mp.getFullYear(), 'month=' + (mp.getMonth()+1));
+  } else if (currentFilters.period === 'custom' && currentFilters.date_from) {
+    const mp = new Date(currentFilters.date_from);
+    mp_.push('year=' + mp.getFullYear(), 'month=' + (mp.getMonth()+1));
+  }
+  if (currentFilters.dealer_type !== 'all') mp_.push('dealer_type=' + encodeURIComponent(currentFilters.dealer_type));
+  if (mp_.length) monthlyUrl += '?' + mp_.join('&');
+  const d = await fetchJSON(monthlyUrl);
+  const title = document.getElementById('monthly-title');
+  const c = document.getElementById('monthly-content');
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+  if (title) title.textContent = '每月经营分析 · ' + d.label;
+  const data = d.data;
+  const ch = data.changes || {};
+  let html = '';
+
+  // 月度 KPI
+  html += '<div class="review-section"><div class="analysis-section-title">月度经营总览</div>';
+  html += '<div class="kpi-grid">' + [
+    ['活动场次', fmtNum(data.activity_count), chgTag(ch.count), 'primary'],
+    ['销售额', '¥'+fmtNum(data.total_sales), chgTag(ch.sales), 'success'],
+    ['参与人数', fmtNum(data.total_participants), chgTag(ch.participants), 'info'],
+    ['企微新增', fmtNum(data.total_wechat), chgTag(ch.wechat), 'warning'],
+    ['转化主机', fmtNum(data.total_hosts), '', 'success'],
+    ['覆盖门店', fmtNum(data.stores_covered), chgTag(ch.stores), 'primary'],
+    ['覆盖代理商', fmtNum(data.dealers_covered), '', 'info'],
+    ['完成率', fmtPct(data.completion_rate), '', 'danger'],
+  ].map(x => kpiCardHTML(x)).join('') + '</div></div>';
+
+  // 活动健康度
+  const hs = data.health_score || 0;
+  html += '<div class="review-section"><div class="analysis-section-title">活动举办健康度</div>';
+  html += '<div class="kpi-grid">' + [
+    ['健康度评分', hs.toFixed(1), '/100', hs>=70?'success':hs>=40?'warning':'danger'],
+    ['有效率', fmtPct(data.efficiency?.valid_rate), '', 'success'],
+    ['无人机活动占比', fmtPct(data.efficiency?.drone_rate), '', 'info'],
+    ['有效活动数', fmtNum(data.valid_activities), '场', 'primary'],
+  ].map(x => kpiCardHTML(x)).join('') + '</div>';
+  html += '<div class="chart-card" style="margin-top:8px"><div class="title">健康度评分卡 <span class="badge">0-100</span></div><div class="chart-body" id="monthly-health-chart" style="height:200px"></div></div>';
+  html += '</div>';
+
+  // 效率测算
+  const eff = data.efficiency || {};
+  html += '<div class="review-section"><div class="analysis-section-title">效率测算</div>';
+  html += '<div class="kpi-grid">' + [
+    ['场均销售额', '¥'+fmtNum(eff.sales_per_activity), '元/场', 'primary'],
+    ['场均主机', fmtNum(eff.hosts_per_activity), '台/场', 'success'],
+    ['企微蓄水率', fmtPct(eff.wechat_rate), '企微/参与', 'warning'],
+    ['主机转化率', fmtPct(eff.conversion_rate), '主机/参与', 'danger'],
+  ].map(x => kpiCardHTML(x)).join('') + '</div></div>';
+
+  // 转化漏斗分析
+  const fn = data.funnel || {};
+  html += '<div class="review-section"><div class="analysis-section-title">转化漏斗分析</div>';
+  html += '<div class="chart-card"><div class="title">活动转化漏斗 <span class="badge">逐层递减</span></div><div class="chart-body" id="monthly-funnel-chart" style="height:300px"></div></div>';
+  html += '</div>';
+
+  // 月内每日趋势图
+  html += '<div class="review-section"><div class="analysis-section-title">月度活动趋势</div>';
+  html += '<div class="chart-card"><div class="title">每日活动与销售 <span class="badge">'+d.label+'</span></div><div class="chart-body" id="monthly-trend-chart" style="height:300px"></div></div>';
+  html += '</div>';
+
+  // 经营结论
+  html += '<div class="review-section"><div class="analysis-section-title">经营结论</div>';
+  (d.findings||[]).forEach(f => { html += findingHTML(f); });
+  html += '</div>';
+
+  // 门店排名
+  html += '<div class="review-section"><div class="analysis-section-title">门店经营排名 Top20</div>';
+  if ((data.store_ranking||[]).length === 0) {
+    html += '<div class="review-summary">本月无门店活动数据</div>';
+  } else {
+    html += tableHTML(['门店','活动数','销售额','参与','企微','主机'],
+      (data.store_ranking||[]).map(r => [r.store_name||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtNum(r.total_hosts)]));
+  }
+  html += '</div>';
+
+  // 代理商排名
+  html += '<div class="review-section"><div class="analysis-section-title">代理商经营排名 Top20</div>';
+  if ((data.dealer_ranking||[]).length === 0) {
+    html += '<div class="review-summary">本月无代理商数据</div>';
+  } else {
+    html += tableHTML(['代理商','活动数','销售额','参与','企微','门店'],
+      (data.dealer_ranking||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtNum(r.stores)]));
+  }
+  html += '</div>';
+
+  // 产品表现
+  html += '<div class="review-section"><div class="analysis-section-title">产品表现</div>';
+  if ((data.product_perf||[]).length === 0) {
+    html += '<div class="review-summary">本月无产品销量数据</div>';
+  } else {
+    html += tableHTML(['产品','总销量','活动场次'], (data.product_perf||[]).map(r => [r.product, fmtNum(r.total_sales), fmtNum(r.activity_count)]));
+  }
+  html += '</div>';
+
+  // 区域表现
+  html += '<div class="review-section"><div class="analysis-section-title">区域表现 Top10</div>';
+  if ((data.region_perf||[]).length === 0) {
+    html += '<div class="review-summary">本月无区域数据</div>';
+  } else {
+    html += tableHTML(['区域','活动数','销售额','参与','门店'], (data.region_perf||[]).map(r => [r.region||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.stores)]));
+  }
+  html += '</div>';
+
+
+  // 活动量排名
+  html += '<div class="review-section"><div class="analysis-section-title">活动量排名</div>';
+  if ((data.activity_count_store||[]).length === 0) {
+    html += '<div class="review-summary">无门店活动量数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">门店活动量 Top20</div>';
+    html += tableHTML(['门店','活动数','销售额','参与','企微'], (data.activity_count_store||[]).map(r => [r.store_name||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.activity_count_dealer||[]).length === 0) {
+    html += '<div class="review-summary">无代理商活动量数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">代理商活动量 Top20</div>';
+    html += tableHTML(['代理商','活动数','销售额','参与','企微','门店数'], (data.activity_count_dealer||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtNum(r.stores)]));
+  }
+  html += '</div>';
+
+  // 零活动名单
+  html += '<div class="review-section"><div class="analysis-section-title">零活动门店与代理商</div>';
+  if ((data.zero_activity_stores||[]).length === 0) {
+    html += '<div class="review-summary">无零活动门店</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">零活动门店 ('+data.zero_activity_stores.length+'家)</div>';
+    html += tableHTML(['门店','代理商','省区','区域','类型'], (data.zero_activity_stores||[]).slice(0,30).map(r => [r.store_name||'-', r.dealer||'-', r.province_unit||'-', r.region||'-', r.store_category||'-']));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.zero_activity_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无零活动代理商</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">零活动代理商 ('+data.zero_activity_dealers.length+'家)</div>';
+    html += tableHTML(['代理商','门店总数','省区'], (data.zero_activity_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.store_count), r.province_units||'-']));
+  }
+  html += '</div>';
+
+  // 活动转化低
+  html += '<div class="review-section"><div class="analysis-section-title">活动转化低（转化率升序）</div>';
+  if ((data.low_conversion_stores||[]).length === 0) {
+    html += '<div class="review-summary">无转化数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">转化率最低门店 Top20</div>';
+    html += tableHTML(['门店','活动数','参与','主机','转化率'], (data.low_conversion_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.low_conversion_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无代理商转化数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">转化率最低代理商 Top20</div>';
+    html += tableHTML(['代理商','活动数','参与','主机','转化率'], (data.low_conversion_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+  }
+  html += '</div>';
+
+  // 企微蓄水低
+  html += '<div class="review-section"><div class="analysis-section-title">企微蓄水低（蓄水率升序）</div>';
+  if ((data.low_wechat_stores||[]).length === 0) {
+    html += '<div class="review-summary">无企微数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">企微蓄水率最低门店 Top20</div>';
+    html += tableHTML(['门店','活动数','参与','企微','蓄水率'], (data.low_wechat_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+  }
+  html += '<div style="height:14px"></div>';
+  if ((data.low_wechat_dealers||[]).length === 0) {
+    html += '<div class="review-summary">无代理商企微数据</div>';
+  } else {
+    html += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">企微蓄水率最低代理商 Top20</div>';
+    html += tableHTML(['代理商','活动数','参与','企微','蓄水率'], (data.low_wechat_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+  }
+  html += '</div>';
+  // 月度经营建议
+  html += '<div class="review-section"><div class="analysis-section-title">月度经营建议</div>';
+  (d.recommendations||[]).forEach(r => { html += recCardHTML(r); });
+  html += '</div>';
+
+  // 月报推送（双模板）
+  html += '<div class="review-section"><div class="analysis-section-title">月报推送（双模板）</div>';
+  html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">';
+  html += '<select id="monthly-push-tpl" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"><option value="dealer">代理商版（月报晾晒）</option><option value="internal">内部版（管理）</option></select>';
+  html += '<button class="filter-btn" onclick="previewMonthlyPush()" style="padding:6px 16px">预览</button>';
+  html += '<button class="filter-btn" onclick="monthlyPushDryRun()" style="padding:6px 16px">Dry-Run</button>';
+  html += '<button class="filter-btn" onclick="monthlyPush(false)" style="padding:6px 16px;background:#4f46e5;color:#fff">推送</button>';
+  html += '</div>';
+  html += '<div id="monthly-push-preview" style="background:#f8f9fa;border-radius:8px;padding:16px;min-height:60px;font-size:13px;line-height:1.8;white-space:pre-wrap;display:none"></div>';
+  html += '<div id="monthly-push-result" style="margin-top:8px;font-size:13px"></div>';
+  html += '</div>';
+
+  c.innerHTML = html;
+
+  // 月度趋势图
+  const tc = initChart('monthly-trend-chart');
+  if (tc && (data.daily_trend||[]).length > 0) {
+    const days = data.daily_trend.map(r => String(r.day));
+    tc.setOption({
+      tooltip:{trigger:'axis'}, legend:{data:['活动数','销售额','参与人数'],top:0},
+      grid:{left:50,right:50,bottom:30,top:30},
+      xAxis:{type:'category',data:days},
+      yAxis:[{type:'value',name:'数量'},{type:'value',name:'销售额',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}}],
+      series:[
+        {name:'活动数',type:'bar',data:data.daily_trend.map(r=>r.activity_count),itemStyle:{color:COLORS[0]}},
+        {name:'销售额',type:'line',yAxisIndex:1,data:data.daily_trend.map(r=>Math.round(r.total_sales||0)),itemStyle:{color:COLORS[1]},smooth:true},
+        {name:'参与人数',type:'bar',data:data.daily_trend.map(r=>r.total_participants),itemStyle:{color:COLORS[2]}}
+      ]
+    });
+  }
+
+  // 健康度仪表盘
+  const hc = initChart('monthly-health-chart');
+  if (hc) {
+    const hs = data.health_score || 0;
+    hc.setOption({
+      series: [{ type: 'gauge', center: ['50%', '60%'], radius: '90%', startAngle: 200, endAngle: -20,
+        min: 0, max: 100,
+        axisLine: { lineStyle: { width: 20, color: [[0.3,'#ef4444'],[0.6,'#f59e0b'],[0.8,'#0ea5e9'],[1,'#10b981']] } },
+        pointer: { width: 5 },
+        detail: { formatter: '{value}', fontSize: 28, offsetCenter: [0, '70%'] },
+        data: [{ value: hs, name: '健康度' }]
+      }]
+    });
+  }
+
+  // 转化漏斗图
+  const fc = initChart('monthly-funnel-chart');
+  if (fc) {
+    fc.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {c}场' },
+      series: [{ type: 'funnel', left: '10%', right: '10%', top: 20, bottom: 20,
+        data: [
+          { name: '活动总数', value: fn.total_activities||0, itemStyle: { color: COLORS[0] } },
+          { name: '有参与人数', value: fn.has_participants||0, itemStyle: { color: COLORS[1] } },
+          { name: '有企微新增', value: fn.has_wechat||0, itemStyle: { color: COLORS[4] } },
+          { name: '有转化主机', value: fn.has_hosts||0, itemStyle: { color: COLORS[3] } },
+          { name: '有销售额', value: fn.has_sales||0, itemStyle: { color: COLORS[2] } }
+        ],
+        label: { show: true, position: 'inside', formatter: '{b}\n{c}场' }
+      }]
+    });
+  }
+}
+
+// ── 通用渲染辅助 ────────────────────────────
+function kpiCardHTML(x) {
+  return '<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+(x[2]||'')+'</div></div>';
+}
+function chgTag(chg) {
+  if (chg == null) return '环比持平';
+  const pct = (chg*100).toFixed(0);
+  const sym = chg > 0 ? '+' : '';
+  return '环比 '+sym+pct+'%';
+}
+function findingHTML(f) {
+  const sev = f.severity || 'medium';
+  return '<div class="analysis-finding '+sev+'"><div class="f-grid">'+
+    '<div class="f-tag">发现</div><div class="f-text">'+(f.finding||'')+'</div>'+
+    '<div class="f-tag">原因</div><div class="f-text">'+(f.cause||'')+'</div>'+
+    '<div class="f-tag">影响</div><div class="f-text">'+(f.impact||'')+'</div>'+
+    '<div class="f-tag">建议</div><div class="f-text action">'+(f.action||'')+'</div>'+
+    '</div></div>';
+}
+function tableHTML(headers, rows) {
+  let h = '<div class="table-wrap"><table><thead><tr>' + headers.map(x => '<th'+(x==='销售额'||x==='参与'||x==='企微'||x==='主机'||x==='活动数'||x==='门店'||x==='覆盖门店'?' class="text-right"':'')+'>'+x+'</th>').join('') + '</tr></thead><tbody>';
+  rows.forEach(r => { h += '<tr>' + r.map((cell,i) => '<td'+(i>=1&&i<=headers.length-1?' class="text-right"':'')+'>'+cell+'</td>').join('') + '</tr>'; });
+  h += '</tbody></table></div>';
+  return h;
+}
+
+// ── 季度实时追踪 ────────────────────────────
+async function loadQTrack() {
+  const c = document.getElementById('qtrack-content');
+  if (c) c.innerHTML = '<div class="loading">加载中... 实时计算季度数据</div>';
+  const d = await fetchJSON('/api/analysis/quarterly_realtime');
+  _renderQTrack(d);
+}
+
+function _renderQTrack(d) {
+  const c = document.getElementById('qtrack-content');
+  if (!c) return;
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+
+  const title = document.getElementById('qtrack-title');
+  if (title) title.textContent = d.label + ' 季度实时追踪';
+
+  let html = '';
+  const qp = d.quarter_progress || {};
+  const mt = d.monthly_tracking || [];
+  const wt = d.weekly_tracking || [];
+  const pc = d.prev_comparison || {};
+
+  // ── 季度进度总览 ──
+  html += '<div class="review-section"><div class="review-section-title">季度进度总览</div>';
+  html += '<div class="kpi-grid">' +
+    [['季度进度', qp.progress_pct+'%', '已过'+qp.elapsed_days+'天/共'+qp.total_days+'天', 'primary'],
+     ['已过周数', qp.elapsed_weeks+' / '+qp.total_weeks+' 周', '剩余'+qp.remaining_days+'天', 'info'],
+     ['当前活动数', fmtNum(qp.current_activities), '场', 'success'],
+     ['预估全季度', fmtNum(qp.projected_activities), '场（按进度推算）', 'warning'],
+     ['当前销售额', '¥'+fmtNum(qp.current_sales), '元', 'success'],
+     ['当前健康度', (qp.health_score||0).toFixed(1), '/100', qp.health_score>=70?'success':qp.health_score>=40?'warning':'danger'],
+     ['活跃代理商', fmtNum(qp.current_dealers), '家', 'info'],
+     ['覆盖门店', fmtNum(qp.current_stores), '家', 'primary'],
+    ].map(x=>'<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('') + '</div>';
+
+  // 进度条
+  html += '<div style="margin-top:12px;background:#e2e8f0;border-radius:8px;height:24px;overflow:hidden;position:relative">';
+  html += '<div style="width:'+qp.progress_pct+'%;height:100%;background:linear-gradient(90deg,#4f46e5,#7c3aed);border-radius:8px;transition:width .5s"></div>';
+  html += '<span style="position:absolute;top:0;left:50%;transform:translateX(-50%);line-height:24px;font-size:12px;font-weight:600;color:#fff">'+qp.progress_pct+'%</span>';
+  html += '</div></div>';
+
+  // ── 上季度对比 ──
+  if (pc.prev_label) {
+    html += '<div class="review-section"><div class="review-section-title">vs '+pc.prev_label+' 对比</div>';
+    html += '<div class="kpi-grid">' +
+      [['活动场次', fmtNum(qp.current_activities), pc.activities_diff!=null?(pc.activities_diff>0?'↑'+pc.activities_diff+'%':pc.activities_diff<0?'↓'+Math.abs(pc.activities_diff)+'%':'持平'):'-', pc.activities_diff>=0?'success':'danger'],
+       ['销售额', '¥'+fmtNum(qp.current_sales), pc.sales_diff!=null?(pc.sales_diff>0?'↑'+pc.sales_diff+'%':pc.sales_diff<0?'↓'+Math.abs(pc.sales_diff)+'%':'持平'):'-', pc.sales_diff>=0?'success':'danger'],
+       ['参与人数', fmtNum(qp.current_participants), pc.participants_diff!=null?(pc.participants_diff>0?'↑'+pc.participants_diff+'%':pc.participants_diff<0?'↓'+Math.abs(pc.participants_diff)+'%':'持平'):'-', pc.participants_diff>=0?'success':'danger'],
+       ['企微新增', fmtNum(qp.current_wechat), pc.wechat_diff!=null?(pc.wechat_diff>0?'↑'+pc.wechat_diff+'%':pc.wechat_diff<0?'↓'+Math.abs(pc.wechat_diff)+'%':'持平'):'-', pc.wechat_diff>=0?'success':'danger'],
+      ].map(x=>'<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('') + '</div></div>';
+  }
+
+  // ── 月度进度追踪 ──
+  html += '<div class="review-section"><div class="review-section-title">月度进度追踪</div>';
+  html += '<div class="chart-card"><div class="title">月度活动场次 & 销售额 <span class="badge">季度内</span></div><div class="chart-body" id="qtrack-month-chart" style="height:320px"></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>月份</th><th class="text-right">活动数</th><th class="text-right">销售额</th><th class="text-right">参与人数</th><th class="text-right">企微新增</th><th class="text-right">转化主机</th><th class="text-right">覆盖门店</th><th class="text-right">健康度</th><th>状态</th>';
+  html += '</tr></thead><tbody>';
+  mt.forEach(m => {
+    const status = m.is_future ? '<span style="color:#94a3b8">未开始</span>' : m.is_current ? '<span style="color:#4f46e5;font-weight:600">进行中</span>' : '<span style="color:#10b981">已完成</span>';
+    html += '<tr><td>'+m.month_name+'</td><td class="text-right">'+fmtNum(m.activity_count)+'</td><td class="text-right">¥'+fmtNum(m.total_sales)+'</td><td class="text-right">'+fmtNum(m.total_participants)+'</td><td class="text-right">'+fmtNum(m.total_wechat)+'</td><td class="text-right">'+fmtNum(m.total_hosts)+'</td><td class="text-right">'+fmtNum(m.stores_covered)+'</td><td class="text-right">'+(m.health_score||0).toFixed(1)+'</td><td>'+status+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // ── 周度节奏追踪 ──
+  html += '<div class="review-section"><div class="review-section-title">周度节奏追踪</div>';
+  html += '<div class="chart-card"><div class="title">每周活动量趋势 <span class="badge">零售周</span></div><div class="chart-body" id="qtrack-week-chart" style="height:300px"></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>周次</th><th>周期</th><th class="text-right">活动数</th><th class="text-right">销售额</th><th class="text-right">参与人数</th><th class="text-right">企微新增</th><th class="text-right">转化主机</th><th class="text-right">健康度</th><th>状态</th>';
+  html += '</tr></thead><tbody>';
+  wt.forEach(w => {
+    const status = w.is_current ? '<span style="color:#4f46e5;font-weight:600">本周</span>' : w.is_past ? '<span style="color:#10b981">已结束</span>' : '<span style="color:#94a3b8">未来</span>';
+    html += '<tr><td>第'+w.week_idx+'周</td><td>'+w.week_start+'-'+w.week_end+'</td><td class="text-right">'+fmtNum(w.activity_count)+'</td><td class="text-right">¥'+fmtNum(w.total_sales)+'</td><td class="text-right">'+fmtNum(w.total_participants)+'</td><td class="text-right">'+fmtNum(w.total_wechat)+'</td><td class="text-right">'+fmtNum(w.total_hosts)+'</td><td class="text-right">'+(w.health_score||0).toFixed(1)+'</td><td>'+status+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  c.innerHTML = html;
+
+  // ── 月度图表 ──
+  const mc = initChart('qtrack-month-chart');
+  if (mc) mc.setOption({
+    tooltip:{trigger:'axis'}, legend:{data:['活动数','销售额','参与人数'],top:0},
+    grid:{left:50,right:50,bottom:30,top:30},
+    xAxis:{type:'category',data:mt.map(r=>r.month_name)},
+    yAxis:[{type:'value',name:'数量'},{type:'value',name:'销售额',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}}],
+    series:[
+      {name:'活动数',type:'bar',data:mt.map(r=>r.activity_count),itemStyle:{color:COLORS[0]}},
+      {name:'销售额',type:'line',yAxisIndex:1,data:mt.map(r=>Math.round(r.total_sales||0)),itemStyle:{color:COLORS[1]},smooth:true},
+      {name:'参与人数',type:'bar',data:mt.map(r=>r.total_participants),itemStyle:{color:COLORS[2]}}
+    ]
+  });
+
+  // ── 周度图表 ──
+  const wc = initChart('qtrack-week-chart');
+  if (wc) {
+    const weekLabels = wt.map(r=>'W'+r.week_idx);
+    wc.setOption({
+      tooltip:{trigger:'axis'}, legend:{data:['活动数','企微新增','转化主机'],top:0},
+      grid:{left:40,right:30,bottom:30,top:30},
+      xAxis:{type:'category',data:weekLabels,axisLabel:{fontSize:10}},
+      yAxis:{type:'value'},
+      series:[
+        {name:'活动数',type:'bar',data:wt.map(r=>r.activity_count),itemStyle:{color:COLORS[0]}},
+        {name:'企微新增',type:'line',data:wt.map(r=>r.total_wechat),itemStyle:{color:COLORS[4]},smooth:true},
+        {name:'转化主机',type:'line',data:wt.map(r=>r.total_hosts),itemStyle:{color:COLORS[3]},smooth:true}
+      ]
+    });
+  }
+
+  // ── 渲染标准季度复盘 sections ──
+  // 在追踪内容后面追加 Q2 风格的 10 个 section
+  setTimeout(() => _renderQTrackReview(d), 100);
+}
+
+function _renderQTrackReview(d) {
+  const c = document.getElementById('qtrack-content');
+  if (!c) return;
+
+  // 追加一个分隔
+  let appendHtml = '<div style="height:20px"></div>';
+
+  // 复用 _renderReview 的逻辑，渲染到临时容器
+  const tmpId = 'qtrack-review-tmp';
+  appendHtml += '<div id="'+tmpId+'"></div>';
+
+  c.insertAdjacentHTML('beforeend', appendHtml);
+
+  // 用 _renderReview 渲染标准 10 sections
+  _renderReview('qtrack', d, tmpId);
+}
+
+// ── 异业合作品牌分析 ────────────────────────
+let _brandData = null;
+let _brandSortKey = 'activity_count';
+
+async function loadBrand() {
+  const c = document.getElementById('brand-content');
+  if (c) c.innerHTML = '<div class="loading">加载中... 分析异业合作品牌数据</div>';
+  const d = await fetchJSON('/api/brand/analysis');
+  _brandData = d;
+  _renderBrandOverview(d);
+}
+
+function _renderBrandOverview(d) {
+  const c = document.getElementById('brand-content');
+  if (!c) return;
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+
+  const s = d.summary || {};
+  let html = '';
+
+  // 总览 KPI
+  html += '<div class="review-section"><div class="review-section-title">异业合作总览</div>';
+  html += '<div class="kpi-grid">' +
+    [['合作活动数', fmtNum(s.coop_activities), '/'+fmtNum(s.total_activities)+'场', 'primary'],
+     ['合作率', fmtPct(s.coop_rate), '占总活动比', 'success'],
+     ['合作品牌数', fmtNum(s.total_brands), '个品牌', 'info'],
+     ['品牌大类数', fmtNum(s.total_categories), '个大类', 'warning'],
+    ].map(x=>'<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('') + '</div></div>';
+
+  // 合作 vs 无合作对比
+  const cmp = d.comparison || {};
+  const co = cmp.coop || {};
+  const nc = cmp.no_coop || {};
+  html += '<div class="review-section"><div class="review-section-title">合作效果对比</div>';
+  html += '<div class="chart-card"><div class="title">有合作 vs 无合作 活动效果 <span class="badge">对比</span></div><div class="chart-body" id="brand-cmp-chart" style="height:300px"></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>类型</th><th class="text-right">活动数</th><th class="text-right">销售额</th><th class="text-right">场均销售</th><th class="text-right">参与人数</th><th class="text-right">企微新增</th><th class="text-right">转化主机</th><th class="text-right">场均主机</th>';
+  html += '</tr></thead><tbody>';
+  html += '<tr><td>有合作</td><td class="text-right">'+fmtNum(co.activity_count)+'</td><td class="text-right">¥'+fmtNum(co.total_sales)+'</td><td class="text-right">¥'+fmtNum(co.avg_sales)+'</td><td class="text-right">'+fmtNum(co.total_participants)+'</td><td class="text-right">'+fmtNum(co.total_wechat)+'</td><td class="text-right">'+fmtNum(co.total_hosts)+'</td><td class="text-right">'+fmtNum(co.avg_hosts)+'</td></tr>';
+  html += '<tr><td>无合作</td><td class="text-right">'+fmtNum(nc.activity_count)+'</td><td class="text-right">¥'+fmtNum(nc.total_sales)+'</td><td class="text-right">¥'+fmtNum(nc.avg_sales)+'</td><td class="text-right">'+fmtNum(nc.total_participants)+'</td><td class="text-right">'+fmtNum(nc.total_wechat)+'</td><td class="text-right">'+fmtNum(nc.total_hosts)+'</td><td class="text-right">'+fmtNum(nc.avg_hosts)+'</td></tr>';
+  html += '</tbody></table></div></div></div>';
+
+  // 品牌大类分布
+  const cats = d.categories || [];
+  html += '<div class="review-section"><div class="review-section-title">品牌大类分布</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">各大类活动数 <span class="badge">按类目</span></div><div class="chart-body" id="brand-cat-chart" style="height:340px"></div></div>';
+  html += '<div class="chart-card"><div class="title">各大类销售额 <span class="badge">按类目</span></div><div class="chart-body" id="brand-cat-sales-chart" style="height:340px"></div></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>品牌大类</th><th class="text-right">品牌数</th><th class="text-right">活动数</th><th class="text-right">销售额</th><th class="text-right">参与人数</th><th class="text-right">企微新增</th><th class="text-right">转化主机</th><th>操作</th>';
+  html += '</tr></thead><tbody>';
+  cats.forEach(cat => {
+    html += '<tr><td>'+cat.category+'</td><td class="text-right">'+fmtNum(cat.brand_count)+'</td><td class="text-right">'+fmtNum(cat.activity_count)+'</td><td class="text-right">¥'+fmtNum(cat.total_sales)+'</td><td class="text-right">'+fmtNum(cat.total_participants)+'</td><td class="text-right">'+fmtNum(cat.total_wechat)+'</td><td class="text-right">'+fmtNum(cat.total_hosts)+'</td><td><button class="filter-btn" style="padding:2px 8px;font-size:12px" onclick="filterBrandByCategory(\''+cat.category+'\')">查看品牌</button></td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // 月度趋势
+  const mt = d.monthly_trend || [];
+  html += '<div class="review-section"><div class="review-section-title">合作活动月度趋势</div>';
+  html += '<div class="chart-card"><div class="title">月度合作活动数 & 销售额 <span class="badge">趋势</span></div><div class="chart-body" id="brand-trend-chart" style="height:300px"></div></div></div>';
+
+  // 品牌排行榜
+  const brands = d.brands || [];
+  html += '<div class="review-section"><div class="review-section-title">品牌排行榜（点击品牌名查看详情）</div>';
+  html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">';
+  html += '<span style="font-size:13px;color:#6b7280">排序：</span>';
+  html += '<select id="brand-sort-select" onchange="sortBrandTable()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">';
+  html += '<option value="activity_count">合作场次</option>';
+  html += '<option value="total_sales">销售额</option>';
+  html += '<option value="total_hosts">转化主机</option>';
+  html += '<option value="avg_sales">场均销售</option>';
+  html += '<option value="conversion_rate">转化率</option>';
+  html += '<option value="first_coop_date">合作时间</option>';
+  html += '</select>';
+  html += '<input id="brand-search" type="text" placeholder="搜索品牌名..." oninput="filterBrandTable()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:160px">';
+  html += '</div>';
+  html += '<div class="table-card"><div class="table-wrap"><table id="brand-rank-table"><thead><tr>';
+  html += '<th>排名</th><th>品牌</th><th>大类</th><th class="text-right">场次</th><th class="text-right">销售额</th><th class="text-right">场均销售</th><th class="text-right">参与</th><th class="text-right">企微</th><th class="text-right">主机</th><th class="text-right">转化率</th><th class="text-right">门店</th><th class="text-right">代理商</th><th>首次合作</th><th>最近合作</th>';
+  html += '</tr></thead><tbody id="brand-rank-body">';
+  html += '</tbody></table></div></div></div>';
+
+  c.innerHTML = html;
+
+  // 渲染品牌排行表
+  _renderBrandTable(brands);
+
+  // 图表
+  const cmpCh = initChart('brand-cmp-chart');
+  if (cmpCh) cmpCh.setOption({
+    tooltip:{trigger:'axis'},legend:{data:['活动数','场均销售','场均主机'],top:0},
+    grid:{left:50,right:50,bottom:30,top:30},
+    xAxis:{type:'category',data:['有合作','无合作']},
+    yAxis:[{type:'value'},{type:'value',name:'元'}],
+    series:[
+      {name:'活动数',type:'bar',data:[co.activity_count||0,nc.activity_count||0],itemStyle:{color:COLORS[0]}},
+      {name:'场均销售',type:'bar',yAxisIndex:1,data:[Math.round(co.avg_sales||0),Math.round(nc.avg_sales||0)],itemStyle:{color:COLORS[1]}},
+      {name:'场均主机',type:'line',data:[(co.avg_hosts||0).toFixed(1),(nc.avg_hosts||0).toFixed(1)],itemStyle:{color:COLORS[3]}},
+    ]
+  });
+
+  const catCh = initChart('brand-cat-chart');
+  if (catCh) catCh.setOption({
+    tooltip:{trigger:'axis'},grid:{left:100,right:40,bottom:20,top:20},
+    xAxis:{type:'value'},
+    yAxis:{type:'category',data:cats.map(r=>r.category).reverse(),axisLabel:{fontSize:10}},
+    series:[{type:'bar',data:cats.map(r=>r.activity_count).reverse(),itemStyle:{color:COLORS[0]},label:{show:true,position:'right',fontSize:10}}]
+  });
+
+  const catSalesCh = initChart('brand-cat-sales-chart');
+  if (catSalesCh) catSalesCh.setOption({
+    tooltip:{trigger:'axis'},grid:{left:100,right:40,bottom:20,top:20},
+    xAxis:{type:'value',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}},
+    yAxis:{type:'category',data:cats.map(r=>r.category).reverse(),axisLabel:{fontSize:10}},
+    series:[{type:'bar',data:cats.map(r=>Math.round(r.total_sales)).reverse(),itemStyle:{color:COLORS[1]},label:{show:true,position:'right',fontSize:10}}]
+  });
+
+  const trendCh = initChart('brand-trend-chart');
+  if (trendCh && mt.length > 0) trendCh.setOption({
+    tooltip:{trigger:'axis'},legend:{data:['活动数','销售额'],top:0},
+    grid:{left:50,right:50,bottom:30,top:30},
+    xAxis:{type:'category',data:mt.map(r=>r.month),axisLabel:{fontSize:9,rotate:30}},
+    yAxis:[{type:'value'},{type:'value',name:'元',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}}],
+    series:[
+      {name:'活动数',type:'bar',data:mt.map(r=>r.activity_count),itemStyle:{color:COLORS[0]}},
+      {name:'销售额',type:'line',yAxisIndex:1,data:mt.map(r=>Math.round(r.total_sales)),itemStyle:{color:COLORS[1]},smooth:true},
+    ]
+  });
+}
+
+function _renderBrandTable(brands) {
+  const body = document.getElementById('brand-rank-body');
+  if (!body) return;
+  const sortKey = _brandSortKey || 'activity_count';
+  const sorted = [...brands].sort((a,b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === 'first_coop_date') { va = va||'9999'; vb = vb||'9999'; return va < vb ? -1 : 1; }
+    return (vb||0) - (va||0);
+  });
+  let rows = '';
+  sorted.forEach((r,i) => {
+    rows += '<tr style="cursor:pointer" onclick="loadBrandDetail(\''+encodeURIComponent(r.brand)+'\')">'+
+      '<td>'+(i+1)+'</td>'+
+      '<td style="color:#4f46e5;font-weight:600">'+r.brand+'</td>'+
+      '<td>'+r.category+'</td>'+
+      '<td class="text-right">'+r.activity_count+'</td>'+
+      '<td class="text-right">¥'+fmtNum(r.total_sales)+'</td>'+
+      '<td class="text-right">¥'+fmtNum(r.avg_sales)+'</td>'+
+      '<td class="text-right">'+fmtNum(r.total_participants)+'</td>'+
+      '<td class="text-right">'+fmtNum(r.total_wechat)+'</td>'+
+      '<td class="text-right">'+r.total_hosts+'</td>'+
+      '<td class="text-right">'+fmtPct(r.conversion_rate)+'</td>'+
+      '<td class="text-right">'+r.stores+'</td>'+
+      '<td class="text-right">'+r.dealers+'</td>'+
+      '<td>'+r.first_coop_date+'</td>'+
+      '<td>'+r.last_coop_date+'</td>'+
+      '</tr>';
+  });
+  body.innerHTML = rows;
+}
+
+function sortBrandTable() {
+  const sel = document.getElementById('brand-sort-select');
+  if (sel) _brandSortKey = sel.value;
+  if (_brandData) _renderBrandTable(_brandData.brands || []);
+}
+
+function filterBrandTable() {
+  const q = (document.getElementById('brand-search')?.value || '').toLowerCase();
+  if (!_brandData) return;
+  const filtered = (_brandData.brands || []).filter(r => r.brand.toLowerCase().includes(q));
+  _renderBrandTable(filtered);
+}
+
+function filterBrandByCategory(cat) {
+  if (!_brandData) return;
+  const filtered = (_brandData.brands || []).filter(r => r.category === cat);
+  _renderBrandTable(filtered);
+  const sel = document.getElementById('brand-search');
+  if (sel) sel.value = '';
+}
+
+async function loadBrandDetail(brandEncoded) {
+  const brand = decodeURIComponent(brandEncoded);
+  const c = document.getElementById('brand-content');
+  if (c) c.innerHTML = '<div class="loading">加载 '+brand+' 品牌详情...</div>';
+  const d = await fetchJSON('/api/brand/detail?brand='+encodeURIComponent(brand));
+  _renderBrandDetail(d);
+}
+
+function _renderBrandDetail(d) {
+  const c = document.getElementById('brand-content');
+  if (!c) return;
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+
+  const title = document.getElementById('brand-title');
+  if (title) title.textContent = d.brand + ' - 品牌合作详情';
+
+  let html = '';
+  html += '<div style="margin-bottom:12px"><button class="filter-btn" onclick="loadBrand()" style="padding:6px 16px">← 返回品牌总览</button></div>';
+
+  // 品牌 KPI
+  html += '<div class="review-section"><div class="review-section-title">'+d.brand+' 合作概况 <span class="badge">'+d.category+'</span></div>';
+  html += '<div class="kpi-grid">' +
+    [['合作场次', d.activity_count, '场', 'primary'],
+     ['总销售额', '¥'+fmtNum(d.total_sales), '元', 'success'],
+     ['转化主机', d.total_hosts, '台', 'warning'],
+     ['参与人数', fmtNum(d.total_participants), '人', 'info'],
+     ['企微新增', fmtNum(d.total_wechat), '人', 'warning'],
+     ['场均销售', '¥'+fmtNum(d.avg_sales), '元/场', 'primary'],
+     ['转化率', fmtPct(d.conversion_rate), '主机/参与', 'danger'],
+     ['蓄水率', fmtPct(d.wechat_rate), '企微/参与', 'success'],
+     ['覆盖门店', d.stores_covered, '家', 'info'],
+     ['覆盖代理商', d.dealers_covered, '家', 'primary'],
+     ['首次合作', d.first_coop_date, '', 'info'],
+     ['最近合作', d.last_coop_date, '', 'info'],
+    ].map(x=>'<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('') + '</div></div>';
+
+  // 月度趋势
+  const mt = d.monthly_trend || [];
+  if (mt.length > 0) {
+    html += '<div class="review-section"><div class="review-section-title">合作月度趋势</div>';
+    html += '<div class="chart-card"><div class="title">'+d.brand+' 月度合作趋势 <span class="badge">趋势</span></div><div class="chart-body" id="brand-detail-trend" style="height:300px"></div></div></div>';
+  }
+
+  // 门店分布
+  const stores = d.store_distribution || [];
+  if (stores.length > 0) {
+    html += '<div class="review-section"><div class="review-section-title">合作门店分布 ('+stores.length+'家)</div>';
+    html += '<div class="table-card"><div class="table-wrap"><table><thead><tr><th>门店</th><th class="text-right">合作次数</th><th class="text-right">销售额</th><th class="text-right">主机</th></tr></thead><tbody>';
+    stores.forEach(r => {
+      html += '<tr><td>'+r.store+'</td><td class="text-right">'+r.count+'</td><td class="text-right">¥'+fmtNum(r.sales)+'</td><td class="text-right">'+r.hosts+'</td></tr>';
+    });
+    html += '</tbody></table></div></div></div>';
+  }
+
+  // 代理商分布
+  const dealers = d.dealer_distribution || [];
+  if (dealers.length > 0) {
+    html += '<div class="review-section"><div class="review-section-title">合作代理商分布 ('+dealers.length+'家)</div>';
+    html += '<div class="table-card"><div class="table-wrap"><table><thead><tr><th>代理商</th><th class="text-right">合作次数</th><th class="text-right">销售额</th><th class="text-right">主机</th></tr></thead><tbody>';
+    dealers.forEach(r => {
+      html += '<tr><td>'+r.dealer+'</td><td class="text-right">'+r.count+'</td><td class="text-right">¥'+fmtNum(r.sales)+'</td><td class="text-right">'+r.hosts+'</td></tr>';
+    });
+    html += '</tbody></table></div></div></div>';
+  }
+
+  // 活动明细
+  const acts = d.activities || [];
+  html += '<div class="review-section"><div class="review-section-title">合作活动明细 ('+acts.length+'场)</div>';
+  html += '<div class="table-card"><div class="table-wrap"><table><thead><tr><th>日期</th><th>活动描述</th><th>门店</th><th>代理商</th><th>省区</th><th class="text-right">参与</th><th class="text-right">企微</th><th class="text-right">主机</th><th class="text-right">销售</th><th>状态</th></tr></thead><tbody>';
+  acts.forEach(r => {
+    html += '<tr><td>'+r.activity_date+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">'+r.activity_desc+'</td><td>'+r.store_name+'</td><td>'+r.dealer+'</td><td>'+r.province_unit+'</td><td class="text-right">'+r.participants+'</td><td class="text-right">'+r.wechat+'</td><td class="text-right">'+r.hosts+'</td><td class="text-right">¥'+fmtNum(r.sales)+'</td><td>'+r.activity_status+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  c.innerHTML = html;
+
+  // 趋势图
+  const tc = initChart('brand-detail-trend');
+  if (tc && mt.length > 0) tc.setOption({
+    tooltip:{trigger:'axis'},legend:{data:['场次','销售额','主机'],top:0},
+    grid:{left:50,right:50,bottom:30,top:30},
+    xAxis:{type:'category',data:mt.map(r=>r.month),axisLabel:{fontSize:9,rotate:30}},
+    yAxis:[{type:'value'},{type:'value',name:'元'}],
+    series:[
+      {name:'场次',type:'bar',data:mt.map(r=>r.count),itemStyle:{color:COLORS[0]}},
+      {name:'销售额',type:'line',yAxisIndex:1,data:mt.map(r=>Math.round(r.sales)),itemStyle:{color:COLORS[1]},smooth:true},
+      {name:'主机',type:'line',data:mt.map(r=>r.hosts),itemStyle:{color:COLORS[3]}},
+    ]
+  });
+}
+
+function _renderReview(prefix, d, containerId) {
+  const c = document.getElementById(containerId);
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+  let html = '';
+  const k = d.section_1_overview.kpis;
+
+  // 1. 经营总览 8项核心指标
+  html += '<div class="review-section"><div class="review-section-title">一、经营总览 8 项核心指标</div>';
+  html += '<div class="review-summary">'+(d.section_1_overview.summary||'')+'</div>';
+  html += '<div class="kpi-grid">'+
+    [['活动总场次',fmtNum(k.total_activities),'场','primary'],
+     ['活动销售总额','¥'+fmtNum(k.total_sales),'元','success'],
+     ['转化主机数量',fmtNum(k.total_hosts),'台','warning'],
+     ['参与人数',fmtNum(k.total_participants),'人','info'],
+     ['企微新增人数',fmtNum(k.total_wechat),'人','warning'],
+     ['有效活动数',fmtNum(k.effective_activities),'场','success'],
+     ['平均单场销售额','¥'+fmtNum(k.avg_sales_per_activity),'元','primary'],
+     ['活动成交率',fmtPct(k.closure_rate),'','danger']
+    ].map(x=>'<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('')+'</div>';
+  html += '</div>';
+
+  // 2. 月度趋势分析
+  const tr = d.section_2_trend;
+  const md = tr.monthly_data||[];
+  html += '<div class="review-section"><div class="review-section-title">二、月度趋势分析</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">月度活动场次 & 销售额 <span class="badge">趋势</span></div><div class="chart-body" id="'+prefix+'-trend-chart" style="height:320px"></div></div>';
+  html += '<div class="chart-card"><div class="title">月度转化 & 企微蓄水 <span class="badge">趋势</span></div><div class="chart-body" id="'+prefix+'-conv-chart" style="height:320px"></div></div></div>';
+  html += '<div class="chart-card" style="margin-top:12px"><div class="title">月度有效活动 & 无人机活动 <span class="badge">趋势</span></div><div class="chart-body" id="'+prefix+'-eff-chart" style="height:300px"></div></div>';
+  html += '<div class="review-text-analysis">';
+  (tr.analysis||[]).forEach(a => html += '<p>'+a+'</p>');
+  html += '</div></div>';
+
+  // 3. 活动转化漏斗
+  const fn = (d.section_3_funnel||{}).funnel||{};
+  html += '<div class="review-section"><div class="review-section-title">三、活动转化漏斗</div>';
+  html += '<div class="chart-card"><div class="title">活动转化漏斗 <span class="badge">逐层递减</span></div><div class="chart-body" id="'+prefix+'-funnel-chart" style="height:350px"></div></div>';
+  html += '</div>';
+
+  // 4. 活动类型经营分析
+  const ta = d.section_4_type||{};
+  const types = ta.type_analysis||[];
+  html += '<div class="review-section"><div class="review-section-title">四、活动类型经营分析</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">各类型销售额对比 <span class="badge">按类型</span></div><div class="chart-body" id="'+prefix+'-type-bar" style="height:340px"></div></div>';
+  html += '<div class="chart-card"><div class="title">各类型活动场次占比 <span class="badge">分布</span></div><div class="chart-body" id="'+prefix+'-type-pie" style="height:340px"></div></div></div>';
+  html += '<div class="chart-card" style="margin-top:12px"><div class="title">活动类型月度趋势 <span class="badge">堆叠</span></div><div class="chart-body" id="'+prefix+'-type-month" style="height:320px"></div></div>';
+  html += '<div class="chart-grid cols-2" style="margin-top:12px"><div class="chart-card"><div class="title">各类型企微蓄水 <span class="badge">按类型</span></div><div class="chart-body" id="'+prefix+'-type-wechat" style="height:300px"></div></div>';
+  html += '<div class="chart-card"><div class="title">各类型有效活动率 <span class="badge">按类型</span></div><div class="chart-body" id="'+prefix+'-type-eff" style="height:300px"></div></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="title">活动类型全量数据</div><div class="table-wrap"><table><thead><tr>';
+  html += '<th>活动类型</th><th class="text-right">场次</th><th class="text-right">有效活动</th><th class="text-right">有效率</th><th class="text-right">销售额</th><th class="text-right">场均销售</th><th class="text-right">转化主机</th><th class="text-right">企微新增</th><th class="text-right">参与人数</th><th class="text-right">无人机活动</th>';
+  html += '</tr></thead><tbody>';
+  types.forEach(r => {
+    html += '<tr><td>'+(r.activity_type||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">'+fmtNum(r.effective_activities)+'</td><td class="text-right">'+fmtPct(r.effective_rate)+'</td><td class="text-right">¥'+fmtNum(r.total_sales)+'</td><td class="text-right">¥'+fmtNum(r.avg_sales)+'</td><td class="text-right">'+fmtNum(r.total_hosts)+'</td><td class="text-right">'+fmtNum(r.total_wechat)+'</td><td class="text-right">'+fmtNum(r.total_participants)+'</td><td class="text-right">'+fmtNum(r.drone_activities)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+  html += '<div class="review-text-analysis">';
+  (ta.analysis||[]).forEach(a => html += '<p>'+a+'</p>');
+  html += '</div></div>';
+
+  // 5. 产品线经营分析
+  const pa = d.section_5_products||{};
+  const prods = pa.products||[];
+  html += '<div class="review-section"><div class="review-section-title">五、产品线经营分析</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">各产品线销量 <span class="badge">台</span></div><div class="chart-body" id="'+prefix+'-prod-bar" style="height:320px"></div></div>';
+  html += '<div class="chart-card"><div class="title">产品月度趋势 <span class="badge">趋势</span></div><div class="chart-body" id="'+prefix+'-prod-trend" style="height:320px"></div></div></div>';
+  const ptc = pa.product_type_cross||[];
+  const ptcTypes = [...new Set(ptc.map(r=>r.activity_type))];
+  const ptcProds = [...new Set(ptc.map(r=>r.product))];
+  html += '<div class="chart-card" style="margin-top:12px"><div class="title">产品 × 活动类型交叉 <span class="badge">销量</span></div><div class="chart-body" id="'+prefix+'-prod-cross" style="height:320px"></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="title">产品 × 活动类型销量明细</div><div class="table-wrap"><table><thead><tr><th>活动类型</th>';
+  ptcProds.forEach(p2 => html += '<th class="text-right">'+p2+'</th>');
+  html += '<th class="text-right">合计</th></tr></thead><tbody>';
+  ptcTypes.forEach(at => {
+    let rowTotal = 0;
+    html += '<tr><td>'+at+'</td>';
+    ptcProds.forEach(p2 => {
+      const v = ptc.find(r => r.activity_type===at && r.product===p2);
+      const q = v ? (v.sales_qty||0) : 0;
+      rowTotal += q;
+      html += '<td class="text-right">'+fmtNum(q)+'</td>';
+    });
+    html += '<td class="text-right">'+fmtNum(rowTotal)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+  html += '<div class="review-text-analysis">';
+  (pa.analysis||[]).forEach(a => html += '<p>'+a+'</p>');
+  html += '</div></div>';
+
+  // 6. 代理商经营排行 Top20
+  const dealers = (d.section_6_dealers||{}).top_dealers||[];
+  html += '<div class="review-section"><div class="review-section-title">六、代理商经营排行 Top 20</div>';
+  html += '<div class="table-card"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>排名</th><th>代理商</th><th>省区</th><th class="text-right">活动场次</th><th class="text-right">有效</th><th class="text-right">有效率</th><th class="text-right">销售额</th><th class="text-right">单场销售</th><th class="text-right">转化主机</th><th class="text-right">企微新增</th><th class="text-right">参与人数</th>';
+  html += '</tr></thead><tbody>';
+  dealers.forEach((r,i) => {
+    html += '<tr><td>'+(i+1)+'</td><td>'+(r.dealer||'-')+'</td><td>'+(r.province_unit||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">'+fmtNum(r.effective)+'</td><td class="text-right">'+fmtPct(r.effective_rate)+'</td><td class="text-right">¥'+fmtNum(r.total_sales)+'</td><td class="text-right">¥'+fmtNum(r.avg_sales)+'</td><td class="text-right">'+fmtNum(r.total_hosts)+'</td><td class="text-right">'+fmtNum(r.total_wechat)+'</td><td class="text-right">'+fmtNum(r.total_participants)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // 7. 门店经营排行 Top20
+  const stores = (d.section_7_stores||{}).top_stores||[];
+  html += '<div class="review-section"><div class="review-section-title">七、门店经营排行 Top 20</div>';
+  html += '<div class="table-card"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>排名</th><th>门店名称</th><th>代理商</th><th>省区</th><th class="text-right">活动场次</th><th class="text-right">销售额</th><th class="text-right">转化主机</th><th class="text-right">企微新增</th><th class="text-right">参与人数</th>';
+  html += '</tr></thead><tbody>';
+  stores.forEach((r,i) => {
+    html += '<tr><td>'+(i+1)+'</td><td>'+(r.store_name||'-')+'</td><td>'+(r.dealer||'-')+'</td><td>'+(r.province_unit||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">¥'+fmtNum(r.total_sales)+'</td><td class="text-right">'+fmtNum(r.total_hosts)+'</td><td class="text-right">'+fmtNum(r.total_wechat)+'</td><td class="text-right">'+fmtNum(r.total_participants)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // 8. 省区 & 省份分布
+  const regs = (d.section_8_regions||{}).province_units||[];
+  html += '<div class="review-section"><div class="review-section-title">八、省区 & 省份分布</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">省区销售贡献 <span class="badge">按省区</span></div><div class="chart-body" id="'+prefix+'-prov-bar" style="height:340px"></div></div>';
+  html += '<div class="chart-card"><div class="title">Top 省份活动场次 <span class="badge">按省份</span></div><div class="chart-body" id="'+prefix+'-prov-pie" style="height:340px"></div></div></div>';
+  html += '<div class="table-card" style="margin-top:12px"><div class="title">省区分布明细</div><div class="table-wrap"><table><thead><tr><th>省区</th><th class="text-right">活动场次</th><th class="text-right">销售额</th><th class="text-right">覆盖门店</th></tr></thead><tbody>';
+  regs.forEach(r => {
+    html += '<tr><td>'+(r.province_unit||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">¥'+fmtNum(r.total_sales)+'</td><td class="text-right">'+fmtNum(r.stores)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // 9. 渠道 & 无人机 & 异业合作对比
+  const cmp = d.section_9_comparisons||{};
+  html += '<div class="review-section"><div class="review-section-title">九、渠道 & 无人机 & 异业合作对比</div>';
+  html += '<div class="chart-grid cols-2"><div class="chart-card"><div class="title">Mall店 vs 照材店 <span class="badge">对比</span></div><div class="chart-body" id="'+prefix+'-ch-cmp" style="height:300px"></div></div>';
+  html += '<div class="chart-card"><div class="title">无人机 vs 非无人机 <span class="badge">对比</span></div><div class="chart-body" id="'+prefix+'-dr-cmp" style="height:300px"></div></div></div>';
+  html += '<div class="chart-grid cols-2" style="margin-top:12px"><div class="chart-card"><div class="title">异业合作 vs 普通活动 <span class="badge">对比</span></div><div class="chart-body" id="'+prefix+'-cb-cmp" style="height:300px"></div></div>';
+  html += '<div class="chart-card"><div class="title">异业合作品牌排行 <span class="badge">Top</span></div><div class="chart-body" id="'+prefix+'-pb-bar" style="height:300px"></div></div></div>';
+  const cmpTable = (data, cols) => {
+    let t = '<div class="table-card" style="margin-top:12px"><div class="table-wrap"><table><thead><tr><th>类别</th>';
+    cols.forEach(co => t += '<th class="text-right">'+co+'</th>');
+    t += '</tr></thead><tbody>';
+    data.forEach(r => {
+      t += '<tr><td>'+(r.category||'-')+'</td>';
+      cols.forEach(co => t += '<td class="text-right">'+fmtNum(r[co])+'</td>');
+      t += '</tr>';
+    });
+    t += '</tbody></table></div></div>';
+    return t;
+  };
+  html += cmpTable(cmp.channel_cmp||[], ['activity_count','total_sales','total_hosts','total_participants','total_wechat']);
+  html += cmpTable(cmp.drone_cmp||[], ['activity_count','total_sales','total_hosts','total_participants','total_wechat']);
+  html += cmpTable(cmp.crossbrand_cmp||[], ['activity_count','total_sales','total_hosts','total_participants','total_wechat']);
+  html += '</div>';
+
+  // 10. 经营结论与建议
+  const cn = d.section_10_conclusion||{};
+  html += '<div class="review-section"><div class="review-section-title">十、经营结论与建议</div>';
+  (cn.findings||[]).forEach(f => {
+    html += '<div class="review-finding">';
+    html += '<div class="f-label">发现</div><div class="f-content">'+f.finding+'</div>';
+    html += '<div class="f-label">原因</div><div class="f-content">'+f.cause+'</div>';
+    html += '<div class="f-label">影响</div><div class="f-content">'+f.impact+'</div>';
+    html += '<div class="f-label" style="color:var(--primary)">建议</div><div class="f-content" style="color:var(--primary)">'+f.action+'</div>';
+    html += '</div>';
+  });
+  html += '<div style="margin-top:16px">';
+  (cn.recommendations||[]).forEach(r => {
+    html += '<div class="review-rec-item"><div class="review-rec-cat">'+r.category+'</div><div class="review-rec-text">'+r.suggestion+'</div></div>';
+  });
+  html += '</div></div>';
+
+  c.innerHTML = html;
+
+  // -- Charts --
+  const tc = initChart(prefix+'-trend-chart');
+  if (tc) tc.setOption({
+    tooltip:{trigger:'axis'}, legend:{data:['活动数','销售额'],top:0},
+    grid:{left:50,right:50,bottom:30,top:30},
+    xAxis:{type:'category',data:md.map(r=>r.month_name)},
+    yAxis:[{type:'value',name:'数量'},{type:'value',name:'销售额',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}}],
+    series:[
+      {name:'活动数',type:'bar',data:md.map(r=>r.activity_count),itemStyle:{color:COLORS[0]}},
+      {name:'销售额',type:'line',yAxisIndex:1,data:md.map(r=>Math.round(r.total_sales||0)),itemStyle:{color:COLORS[1]},smooth:true}
+    ]
+  });
+  const cc = initChart(prefix+'-conv-chart');
+  if (cc) cc.setOption({
+    tooltip:{trigger:'axis'}, legend:{data:['转化主机','企微新增','参与人数'],top:0},
+    grid:{left:50,right:30,bottom:30,top:30},
+    xAxis:{type:'category',data:md.map(r=>r.month_name)},
+    yAxis:{type:'value'},
+    series:[
+      {name:'转化主机',type:'bar',data:md.map(r=>r.total_hosts||0),itemStyle:{color:COLORS[3]}},
+      {name:'企微新增',type:'bar',data:md.map(r=>r.total_wechat||0),itemStyle:{color:COLORS[4]}},
+      {name:'参与人数',type:'line',data:md.map(r=>r.total_participants||0),itemStyle:{color:COLORS[2]},smooth:true}
+    ]
+  });
+  const ec = initChart(prefix+'-eff-chart');
+  if (ec) ec.setOption({
+    tooltip:{trigger:'axis'}, legend:{data:['有效活动','无人机活动'],top:0},
+    grid:{left:50,right:30,bottom:30,top:30},
+    xAxis:{type:'category',data:md.map(r=>r.month_name)},
+    yAxis:{type:'value'},
+    series:[
+      {name:'有效活动',type:'bar',data:md.map(r=>r.effective_activities||0),itemStyle:{color:COLORS[1]}},
+      {name:'无人机活动',type:'bar',data:md.map(r=>r.drone_activities||0),itemStyle:{color:COLORS[5]}}
+    ]
+  });
+  const fc = initChart(prefix+'-funnel-chart');
+  if (fc) fc.setOption({
+    tooltip:{trigger:'item',formatter:'{b}: {c}'},
+    series:[{type:'funnel',left:'10%',right:'10%',top:20,bottom:20,
+      data:[
+        {name:'活动总数',value:fn.total_activities||0,itemStyle:{color:COLORS[0]}},
+        {name:'有参与人数',value:fn.has_participants||0,itemStyle:{color:COLORS[1]}},
+        {name:'有企微新增',value:fn.has_wechat||0,itemStyle:{color:COLORS[4]}},
+        {name:'有转化主机',value:fn.has_hosts||0,itemStyle:{color:COLORS[3]}},
+        {name:'有销售额',value:fn.has_sales||0,itemStyle:{color:COLORS[2]}}
+      ],
+      label:{show:true,position:'inside',formatter:'{b}\n{c}场'}
+    }]
+  });
+  const tbc = initChart(prefix+'-type-bar');
+  if (tbc) tbc.setOption({
+    tooltip:{trigger:'axis'},grid:{left:60,right:30,bottom:60,top:20},
+    xAxis:{type:'category',data:types.map(r=>r.activity_type),axisLabel:{rotate:30,fontSize:10}},
+    yAxis:{type:'value',name:'元',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}},
+    series:[{type:'bar',data:types.map(r=>Math.round(r.total_sales||0)),itemStyle:{color:COLORS[1]},label:{show:true,position:'top',fontSize:10}}]
+  });
+  const tpc = initChart(prefix+'-type-pie');
+  if (tpc) tpc.setOption({
+    tooltip:{trigger:'item',formatter:'{b}: {c}场 ({d}%)'},
+    legend:{type:'scroll',orient:'vertical',right:0,top:'center',textStyle:{fontSize:11}},
+    series:[{type:'pie',radius:['35%','65%'],center:['40%','50%'],
+      data:types.map((r,i)=>({name:r.activity_type,value:r.activity_count,itemStyle:{color:COLORS[i%10]}})),
+      label:{formatter:'{b}\n{d}%',fontSize:10}}]
+  });
+  const tmc = initChart(prefix+'-type-month');
+  if (tmc) {
+    const tm = ta.type_month||[];
+    const months = [...new Set(tm.map(r=>r.month))].sort();
+    const tn = [...new Set(tm.map(r=>r.activity_type))];
+    tmc.setOption({
+      tooltip:{trigger:'axis'},legend:{data:tn,top:0,type:'scroll',fontSize:9},
+      grid:{left:40,right:20,bottom:30,top:40},
+      xAxis:{type:'category',data:months.map(m=>m+'月'),axisLabel:{fontSize:10}},
+      yAxis:{type:'value'},
+      series:tn.map((n,i)=>({name:n,type:'bar',stack:'total',
+        data:months.map(m=>{const r=tm.find(d=>d.activity_type===n&&d.month==m);return r?r.cnt:0;}),
+        itemStyle:{color:COLORS[i%10]}}))
+    });
+  }
+  const twc = initChart(prefix+'-type-wechat');
+  if (twc) twc.setOption({
+    tooltip:{trigger:'axis'},grid:{left:60,right:30,bottom:60,top:20},
+    xAxis:{type:'category',data:types.map(r=>r.activity_type),axisLabel:{rotate:30,fontSize:10}},
+    yAxis:{type:'value',name:'人'},
+    series:[{type:'bar',data:types.map(r=>r.total_wechat||0),itemStyle:{color:'#8b5cf6',borderRadius:[4,4,0,0]},label:{show:true,position:'top',fontSize:10}}]
+  });
+  const tec = initChart(prefix+'-type-eff');
+  if (tec) tec.setOption({
+    tooltip:{trigger:'axis'},grid:{left:60,right:30,bottom:60,top:20},
+    xAxis:{type:'category',data:types.map(r=>r.activity_type),axisLabel:{rotate:30,fontSize:10}},
+    yAxis:{type:'value',max:1,axisLabel:{formatter:v=>(v*100).toFixed(0)+'%'}},
+    series:[{type:'bar',data:types.map(r=>r.effective_rate||0),itemStyle:{color:COLORS[1],borderRadius:[4,4,0,0]},label:{show:true,position:'top',formatter:p=>(p.value*100).toFixed(0)+'%',fontSize:10}}]
+  });
+  const pbc = initChart(prefix+'-prod-bar');
+  if (pbc) pbc.setOption({
+    tooltip:{trigger:'axis'},grid:{left:60,right:30,bottom:30,top:20},
+    xAxis:{type:'category',data:prods.map(r=>r.product),axisLabel:{fontSize:10}},
+    yAxis:{type:'value',name:'台'},
+    series:[{type:'bar',data:prods.map(r=>r.total_sales||0),itemStyle:{color:COLORS[0]},label:{show:true,position:'top',fontSize:10}}]
+  });
+  const ptc2 = initChart(prefix+'-prod-trend');
+  if (ptc2 && pa.product_month) {
+    const pMonths = [...new Set(pa.product_month.map(r=>r.month))].sort();
+    const pLines = [...new Set(pa.product_month.map(r=>r.product))];
+    ptc2.setOption({
+      tooltip:{trigger:'axis'},legend:{data:pLines,top:0,fontSize:9},
+      grid:{left:40,right:20,bottom:30,top:40},
+      xAxis:{type:'category',data:pMonths.map(m=>m+'月'),axisLabel:{fontSize:10}},
+      yAxis:{type:'value',name:'台'},
+      series:pLines.map((ln,i)=>({name:ln,type:'line',
+        data:pMonths.map(m=>{const r=pa.product_month.find(d=>d.product===ln&&d.month==m);return r?(r.sales_qty||0):0;}),
+        itemStyle:{color:COLORS[i%10]}}))
+    });
+  }
+  const pcc = initChart(prefix+'-prod-cross');
+  if (pcc) pcc.setOption({
+    tooltip:{trigger:'axis'},legend:{data:ptcProds,top:0,fontSize:9,type:'scroll'},
+    grid:{left:60,right:30,bottom:60,top:40},
+    xAxis:{type:'category',data:ptcTypes,axisLabel:{rotate:30,fontSize:10}},
+    yAxis:{type:'value',name:'台'},
+    series:ptcProds.map((p2,i)=>({name:p2,type:'bar',
+      data:ptcTypes.map(at=>{const r=ptc.find(d=>d.activity_type===at&&d.product===p2);return r?(r.sales_qty||0):0;}),
+      itemStyle:{color:COLORS[i%10]}}))
+  });
+  const rbc = initChart(prefix+'-prov-bar');
+  if (rbc) rbc.setOption({
+    tooltip:{trigger:'axis'},grid:{left:100,right:40,bottom:20,top:20},
+    xAxis:{type:'value',name:'元',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}},
+    yAxis:{type:'category',data:regs.slice(0,15).map(r=>r.province_unit).reverse(),axisLabel:{fontSize:10}},
+    series:[{type:'bar',data:regs.slice(0,15).map(r=>Math.round(r.total_sales||0)).reverse(),itemStyle:{color:COLORS[1]},label:{show:true,position:'right',fontSize:10}}]
+  });
+  const rpc = initChart(prefix+'-prov-pie');
+  if (rpc) rpc.setOption({
+    tooltip:{trigger:'item',formatter:'{b}: {c}场 ({d}%)'},
+    legend:{type:'scroll',orient:'vertical',right:0,top:'center',textStyle:{fontSize:11}},
+    series:[{type:'pie',radius:['35%','65%'],center:['40%','50%'],
+      data:regs.slice(0,15).map((r,i)=>({name:r.province_unit,value:r.activity_count,itemStyle:{color:COLORS[i%10]}})),
+      label:{formatter:'{b}\n{d}%',fontSize:10}}]
+  });
+  const _cmpChart = (id, data) => {
+    const ch = initChart(id);
+    if (ch) ch.setOption({
+      tooltip:{trigger:'axis'},legend:{data:['活动数','销售额','转化主机','企微','参与'],top:0,fontSize:9},
+      grid:{left:50,right:30,bottom:30,top:40},
+      xAxis:{type:'category',data:data.map(r=>r.category)},
+      yAxis:[{type:'value'},{type:'value',name:'元',axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v}}],
+      series:[
+        {name:'活动数',type:'bar',data:data.map(r=>r.activity_count||0),itemStyle:{color:COLORS[0]}},
+        {name:'销售额',type:'bar',yAxisIndex:1,data:data.map(r=>Math.round(r.total_sales||0)),itemStyle:{color:COLORS[1]}},
+        {name:'转化主机',type:'line',data:data.map(r=>r.total_hosts||0),itemStyle:{color:COLORS[3]}},
+        {name:'企微',type:'line',data:data.map(r=>r.total_wechat||0),itemStyle:{color:COLORS[4]}},
+        {name:'参与',type:'line',data:data.map(r=>r.total_participants||0),itemStyle:{color:COLORS[2]}}
+      ]
+    });
+  };
+  _cmpChart(prefix+'-ch-cmp', cmp.channel_cmp||[]);
+  _cmpChart(prefix+'-dr-cmp', cmp.drone_cmp||[]);
+  _cmpChart(prefix+'-cb-cmp', cmp.crossbrand_cmp||[]);
+  const pbc2 = initChart(prefix+'-pb-bar');
+  if (pbc2) pbc2.setOption({
+    tooltip:{trigger:'axis'},grid:{left:100,right:40,bottom:20,top:20},
+    xAxis:{type:'value',name:'次'},
+    yAxis:{type:'category',data:(cmp.partner_brands||[]).slice(0,15).map(r=>r.brand).reverse(),axisLabel:{fontSize:10}},
+    series:[{type:'bar',data:(cmp.partner_brands||[]).slice(0,15).map(r=>r.coop_count||0).reverse(),itemStyle:{color:COLORS[5]},label:{show:true,position:'right',fontSize:10}}]
+  });
+}
+
+async function _loadQ2Review() {
+  const d = await fetchJSON('/api/review/q2');
+  _renderReview('q2', d, 'q2-content');
+}
+
+// Luna 上市经营复盘
+async function loadLunaReview() {
+  const d = await fetchJSON('/api/review/luna');
+  const c = document.getElementById('luna-content');
+  if (d.error) { c.innerHTML = '<div class="loading">'+d.error+'</div>'; return; }
+  let html = '';
+
+  // 1. 经营总览
+  const k = (d.section_1_overview||{}).kpis||{};
+  const mt = (d.section_1_overview||{}).monthly_trend||[];
+  html += '<div class="review-section"><div class="review-section-title">一、Luna上市经营总览</div>';
+  html += '<div class="review-summary">'+(d.section_1_overview||{}).summary+'</div>';
+  html += '<div class="kpi-grid">'+
+    [['活动总场次',fmtNum(k.total_activities),'场','primary'],
+     ['活动销售总额','¥'+fmtNum(k.total_sales),'元','success'],
+     ['参与人数',fmtNum(k.total_participants),'人次','info'],
+     ['覆盖门店',fmtNum(k.stores_covered),'家','primary'],
+     ['覆盖代理商',fmtNum(k.dealers_covered),'家','info'],
+    ].map(x=>'<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('')+'</div>';
+  // 月度趋势图
+  html += '<div class="chart-card" style="margin-top:12px"><div class="title">月度活动场次 & 销售额 <span class="badge">趋势</span></div><div class="chart-body" id="luna-trend-chart" style="height:320px"></div></div>';
+  html += '</div>';
+
+  // 2. 上市前后对比
+  const cmp = d.section_2_comparison||{};
+  const changes = cmp.changes||{};
+  const before = cmp.before||{};
+  const after = cmp.after||{};
+  html += '<div class="review-section"><div class="review-section-title">二、上市前后对比（上市日：'+d.launch_date+'）</div>';
+  html += '<div class="kpi-grid">'+
+    [['上市前活动',fmtNum(before.activity_count),'场','info'],
+     ['上市后活动',fmtNum(after.activity_count),'场','success'],
+     ['上市前场均销售','¥'+fmtNum(before.avg_sales),'元','info'],
+     ['上市后场均销售','¥'+fmtNum(after.avg_sales),'元','success'],
+     ['上市前参与人数',fmtNum(before.total_participants),'人','info'],
+     ['上市后参与人数',fmtNum(after.total_participants),'人','success'],
+    ].map(x=>'<div class="kpi-card"><div class="label">'+x[0]+'</div><div class="value '+x[3]+'">'+x[1]+'</div><div class="sub">'+x[2]+'</div></div>').join('')+'</div>';
+  html += '<div class="review-text-analysis">';
+  (cmp.analysis||[]).forEach(a => html += '<p>'+a+'</p>');
+  html += '</div></div>';
+
+  // 3. 活动画像
+  const prof = d.section_3_profile||{};
+  html += '<div class="review-section"><div class="review-section-title">三、活动画像</div>';
+  const tp = prof.type_perf||[];
+  if (tp.length) {
+    html += '<div class="table-card"><div class="title">活动类型表现</div><div class="table-wrap"><table><thead><tr><th>活动类型</th><th class="text-right">场次</th><th class="text-right">销售额</th><th class="text-right">场均销售</th><th class="text-right">参与人数</th></tr></thead><tbody>';
+    tp.forEach(r => {
+      html += '<tr><td>'+(r.activity_type||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">¥'+fmtNum(r.total_sales)+'</td><td class="text-right">¥'+fmtNum(r.avg_sales)+'</td><td class="text-right">'+fmtNum(r.total_participants)+'</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+  const dp = prof.dealer_perf||[];
+  if (dp.length) {
+    html += '<div class="table-card" style="margin-top:12px"><div class="title">代理商表现 Top10</div><div class="table-wrap"><table><thead><tr><th>代理商</th><th class="text-right">活动数</th><th class="text-right">销售额</th><th class="text-right">参与人数</th><th class="text-right">门店数</th></tr></thead><tbody>';
+    dp.slice(0,10).forEach(r => {
+      html += '<tr><td>'+(r.dealer||'-')+'</td><td class="text-right">'+fmtNum(r.activity_count)+'</td><td class="text-right">¥'+fmtNum(r.total_sales)+'</td><td class="text-right">'+fmtNum(r.total_participants)+'</td><td class="text-right">'+fmtNum(r.stores)+'</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+  html += '<div class="review-text-analysis">';
+  (prof.analysis||[]).forEach(a => html += '<p>'+a+'</p>');
+  html += '</div></div>';
+
+  // 4. 优秀案例
+  const cases = d.section_4_cases||{};
+  const cl = cases.cases||[];
+  html += '<div class="review-section"><div class="review-section-title">四、优秀案例</div>';
+  if (cl.length) {
+    html += '<div class="table-card"><div class="table-wrap"><table><thead><tr><th>活动</th><th>门店</th><th>类型</th><th class="text-right">销售额</th><th class="text-right">参与</th><th class="text-right">企微</th></tr></thead><tbody>';
+    cl.slice(0,10).forEach(r => {
+      html += '<tr><td>'+str(r.activity_desc,20)+'</td><td>'+str(r.store_name,12)+'</td><td>'+(r.activity_type||'-')+'</td><td class="text-right">¥'+fmtNum(r.sales)+'</td><td class="text-right">'+fmtNum(r.participants)+'</td><td class="text-right">'+fmtNum(r.wechat)+'</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  } else {
+    html += '<div class="review-summary">暂无案例数据</div>';
+  }
+  html += '<div class="review-text-analysis">';
+  (cases.analysis||[]).forEach(a => html += '<p>'+a+'</p>');
+  html += '</div></div>';
+
+  // 5. 结论
+  const conc = d.section_5_conclusion||{};
+  html += '<div class="review-section"><div class="review-section-title">五、复盘结论</div>';
+  if (conc.effect_summary) html += '<div class="review-summary">'+conc.effect_summary+'</div>';
+  if ((conc.successes||[]).length) {
+    html += '<div class="analysis-section-title" style="margin:12px 0 6px">成效</div>';
+    conc.successes.forEach(s => html += '<p style="margin:4px 0;color:#059669">✓ '+s+'</p>');
+  }
+  if ((conc.problems||[]).length) {
+    html += '<div class="analysis-section-title" style="margin:12px 0 6px">问题</div>';
+    conc.problems.forEach(p => html += '<p style="margin:4px 0;color:#dc2626">✗ '+p+'</p>');
+  }
+  if ((conc.q3_recommendations||[]).length) {
+    html += '<div class="analysis-section-title" style="margin:12px 0 6px">Q3建议</div>';
+    conc.q3_recommendations.forEach(r => html += '<p style="margin:4px 0">'+r+'</p>');
+  }
+  html += '</div>';
+
+  c.innerHTML = html;
+
+  // 月度趋势图
+  const tc = initChart('luna-trend-chart');
+  if (tc && mt.length) {
+    tc.setOption({
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['活动场次','销售额'], top: 0 },
+      xAxis: { type: 'category', data: mt.map(r=>r.activity_date) },
+      yAxis: [{ type:'value', name:'场次' },{ type:'value', name:'万元', position:'right' }],
+      series: [
+        { name:'活动场次', type:'bar', data: mt.map(r=>r.activity_count), itemStyle:{color:COLORS[0]} },
+        { name:'销售额', type:'line', yAxisIndex:1, data: mt.map(r=>(r.total_sales/10000).toFixed(1)), itemStyle:{color:COLORS[1]} },
+      ]
+    });
+  }
+}
+
+// Helper
+function str(s, n) { s = String(s||''); return s.length>n ? s.slice(0,n)+'...' : s; }
+function fmtDate(d) { return d ? String(d).slice(0,10) : '-'; }
+
+// ── Overview ────────────────────────────────
+async function loadOverview() {
+  const data = await getData('overview', '/api/overview');
+  const kpi = document.getElementById('overview-kpi');
+  if (data.empty) { kpi.innerHTML = '<div class="loading">当前筛选条件下无活动数据</div>'; return; }
+  kpi.innerHTML = [
+    {label:'活动总数', value:fmtNum(data.total_activities), sub:'全量记录', cls:'primary'},
+    {label:'总销售额', value:'¥'+fmtNum(data.total_sales), sub:'清洗后', cls:'success'},
+    {label:'参与人数', value:fmtNum(data.total_participants), sub:'累计', cls:'info'},
+    {label:'企微添加', value:fmtNum(data.total_wechat_adds), sub:'累计', cls:'warning'},
+    {label:'完成率', value:fmtPct(data.completion_rate), sub:data.completed+'场已完成', cls: data.completion_rate < 0.1 ? 'danger':'success'},
+    {label:'有活动门店', value:fmtNum(data.active_stores), sub:'/ '+data.total_stores+'家总数', cls:'primary'},
+    {label:'代理商数', value:fmtNum(data.total_dealers), sub:'覆盖', cls:'info'},
+    {label:'场均销售', value:'¥'+fmtNum(data.avg_sales_per_activity), sub:'已完成活动', cls:'success'},
+    {label:'健康度', value:(data.health_score!=null?data.health_score.toFixed(1):'-'), sub:'有效活动占比', cls:(data.health_score||0)>=70?'success':(data.health_score||0)>=40?'warning':'danger'},
+  ].map(k => `<div class="kpi-card"><div class="label">${k.label}</div><div class="value ${k.cls}">${k.value}</div><div class="sub">${k.sub}</div></div>`).join('');
+
+  // Trend chart
+  const trend = await getData('activity_trend', '/api/activity/trend');
+  const tc = initChart('chart-trend');
+  tc.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['活动数','销售额'], top: 0 },
+    grid: { left: 50, right: 50, bottom: 60, top: 30 },
+    xAxis: { type: 'category', data: trend.data.map(r=>r.year_month), axisLabel:{rotate:45,fontSize:10} },
+    yAxis: [{ type:'value', name:'活动数' }, { type:'value', name:'销售额(元)', axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v} }],
+    series: [
+      { name:'活动数', type:'bar', data: trend.data.map(r=>r.activity_count), itemStyle:{color:COLORS[0]} },
+      { name:'销售额', type:'line', yAxisIndex:1, data: trend.data.map(r=>Math.round(r.total_sales||0)), itemStyle:{color:COLORS[1]}, smooth:true }
+    ]
+  });
+
+  // Type pie
+  const types = await getData('activity_by_type', '/api/activity/by_type');
+  const tc2 = initChart('chart-type-pie');
+  tc2.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}场 ({d}%)' },
+    legend: { type:'scroll', orient:'vertical', right:0, top:'center', textStyle:{fontSize:11} },
+    series: [{ type:'pie', radius:['40%','70%'], center:['40%','50%'], data: types.data.map((r,i)=>({name:r.activity_type, value:r.activity_count, itemStyle:{color:COLORS[i%10]}})), label:{formatter:'{b}\n{d}%'} }]
+  });
+
+  // Region top10
+  const regions = await getData('regions', '/api/regions');
+  const topRegions = regions.data.sort((a,b)=>b.activity_count-a.activity_count).slice(0,10);
+  const tc3 = initChart('chart-region-top');
+  tc3.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: 100, right: 20, bottom: 20, top: 20 },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: topRegions.map(r=>r.region).reverse(), axisLabel:{fontSize:11} },
+    series: [{ type:'bar', data: topRegions.map(r=>r.activity_count).reverse(), itemStyle:{color:COLORS[0]}, label:{show:true,position:'right',fontSize:11} }]
+  });
+
+  // Status distribution
+  const statusData = [
+    {name:'待评估', value:data.pending, color:COLORS[3]},
+    {name:'已完成', value:data.completed, color:COLORS[1]},
+    {name:'交付执行中', value:data.in_progress, color:COLORS[2]},
+    {name:'终止', value:data.terminated, color:'#94a3b8'}
+  ];
+  const tc4 = initChart('chart-status');
+  tc4.setOption({
+    tooltip: { trigger:'item', formatter:'{b}: {c}场 ({d}%)' },
+    legend: { bottom: 0, textStyle:{fontSize:11} },
+    series: [{ type:'pie', radius:'65%', center:['50%','45%'], data: statusData.map(s=>({name:s.name, value:s.value, itemStyle:{color:s.color}})) }]
+  });
+
+  // Load insights
+  const insights = await getData('insights_summary', '/api/insights/summary');
+  document.getElementById('overview-insights').innerHTML = insights.data.map(insightCardHTML).join('');
+
+  // Load recommendations
+ const recs = await getData('insights_recommendations', '/api/insights/recommendations');
+ document.getElementById('overview-recommendations').innerHTML = recs.data.map(recCardHTML).join('');
+
+  // Conversion funnel
+  const funnel = await getData('funnel', '/api/funnel');
+  const fc = initChart('chart-funnel');
+  if (fc && funnel && funnel.stages) {
+    fc.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+      series: [{ type: 'funnel', left: '10%', right: '10%', top: 10, bottom: 10, minSize: '20%',
+        label: { show: true, position: 'inside', fontSize: 11 },
+        data: funnel.stages.map(s => ({ name: s.name, value: s.value })),
+        itemStyle: { borderColor: '#fff', borderWidth: 1 },
+        color: ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981']
+      }]
+    });
+  }
+  // Monthly multi-trend: wechat & participants
+  const mmt = await getData('monthly_multi_trend', '/api/trend/monthly_multi');
+  const wc = initChart('chart-monthly-wecom');
+  if (wc && mmt && mmt.data) {
+    wc.setOption({
+      tooltip: { trigger: 'axis' }, legend: { data: ['企微新增','参与人数'], top: 0 },
+      grid: { left: 50, right: 30, bottom: 60, top: 30 },
+      xAxis: { type: 'category', data: mmt.data.map(r=>r.year_month), axisLabel:{rotate:45,fontSize:10} },
+      yAxis: { type: 'value' },
+      series: [
+        { name:'企微新增', type:'bar', data: mmt.data.map(r=>r.wechat_adds), itemStyle:{color:'#8b5cf6'} },
+        { name:'参与人数', type:'line', data: mmt.data.map(r=>r.participants), itemStyle:{color:'#3b82f6'}, smooth:true }
+      ]
+    });
+  }
+  // Monthly: effective & drone
+  const ec = initChart('chart-monthly-eff');
+  if (ec && mmt && mmt.data) {
+    ec.setOption({
+      tooltip: { trigger: 'axis' }, legend: { data: ['有效活动','无人机活动'], top: 0 },
+      grid: { left: 50, right: 30, bottom: 60, top: 30 },
+      xAxis: { type: 'category', data: mmt.data.map(r=>r.year_month), axisLabel:{rotate:45,fontSize:10} },
+      yAxis: { type: 'value', name: '场' },
+      series: [
+        { name:'有效活动', type:'bar', data: mmt.data.map(r=>r.effective), itemStyle:{color:'#10b981'} },
+        { name:'无人机活动', type:'line', data: mmt.data.map(r=>r.drone_count), itemStyle:{color:'#f59e0b'}, smooth:true }
+      ]
+    });
+  }
+}
+
+// ── Activity Analysis ───────────────────────
+async function loadActivity() {
+  const types = await getData('activity_by_type', '/api/activity/by_type');
+  // Bar chart
+  const c1 = initChart('chart-act-type-bar');
+  c1.setOption({
+    tooltip: { trigger:'axis', axisPointer:{type:'shadow'} },
+    legend: { data:['活动数','总销售额','场均销售'], top:0 },
+    grid: { left: 60, right: 60, bottom: 60, top: 30 },
+    xAxis: { type:'category', data: types.data.map(r=>r.activity_type), axisLabel:{rotate:30,fontSize:10} },
+    yAxis: [{ type:'value', name:'数量' }, { type:'value', name:'销售额(元)', axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v} }],
+    series: [
+      { name:'活动数', type:'bar', data: types.data.map(r=>r.activity_count), itemStyle:{color:COLORS[0]} },
+      { name:'总销售额', type:'bar', yAxisIndex:1, data: types.data.map(r=>Math.round(r.total_sales||0)), itemStyle:{color:COLORS[1]} },
+      { name:'场均销售', type:'line', yAxisIndex:1, data: types.data.map(r=>Math.round(r.sales_per_activity||0)), itemStyle:{color:COLORS[2]}, label:{show:true,formatter:p=>fmtNum(p.value)} }
+    ]
+  });
+
+  // Sales trend
+  const trend = await getData('activity_trend', '/api/activity/trend');
+  const c2 = initChart('chart-act-sales-trend');
+  c2.setOption({
+    tooltip: { trigger:'axis' },
+    grid: { left: 60, right: 30, bottom: 60, top: 20 },
+    xAxis: { type:'category', data: trend.data.map(r=>r.year_month), axisLabel:{rotate:45,fontSize:10} },
+    yAxis: { type:'value', name:'销售额(元)', axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v} },
+    series: [{ name:'月度销售额', type:'line', data: trend.data.map(r=>Math.round(r.total_sales||0)), itemStyle:{color:COLORS[1]}, areaStyle:{opacity:0.1}, smooth:true }]
+  });
+
+  // Table
+  const tbl = document.getElementById('table-act-type');
+  tbl.innerHTML = `<thead><tr>
+    <th>活动类型</th><th class="text-right">活动数</th><th class="text-right">已完成</th><th class="text-right">完成率</th>
+    <th class="text-right">总销售额</th><th class="text-right">场均销售</th><th class="text-right">参与人数</th><th class="text-right">企微添加</th><th class="text-right">覆盖门店</th>
+  </tr></thead><tbody>${types.data.map(r=>`<tr>
+    <td>${r.activity_type}</td><td class="text-right">${fmtNum(r.activity_count)}</td>
+    <td class="text-right">${fmtNum(r.completed_count)}</td><td class="text-right">${fmtPct(r.completion_rate)}</td>
+    <td class="text-right">¥${fmtNum(r.total_sales)}</td><td class="text-right">¥${fmtNum(r.sales_per_activity)}</td>
+    <td class="text-right">${fmtNum(r.total_participants)}</td><td class="text-right">${fmtNum(r.total_wechat_adds)}</td>
+   <td class="text-right">${fmtNum(r.unique_stores)}</td>
+ </tr>`).join('')}</tbody>`;
+
+  // Activity type pie
+  const pie = initChart('chart-act-type-pie');
+  if (pie) pie.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}场 ({d}%)' },
+    legend: { type:'scroll', orient:'vertical', right:0, top:'center', textStyle:{fontSize:11} },
+    series: [{ type:'pie', radius:['35%','65%'], center:['40%','50%'], data: types.data.map((r,i)=>({name:r.activity_type,value:r.activity_count,itemStyle:{color:COLORS[i%10]}})), label:{formatter:'{b}\n{d}%',fontSize:10} }]
+  });
+  // Type x month stacked bar
+  const tmData = await getData('type_month_cross', '/api/type/month_cross');
+  const tm = initChart('chart-act-type-month');
+  if (tm && tmData && tmData.data) {
+    const months = [...new Set(tmData.data.map(r=>r.year_month))].sort();
+    const typeNames = [...new Set(tmData.data.map(r=>r.activity_type))];
+    tm.setOption({
+      tooltip: { trigger: 'axis' }, legend: { data: typeNames, top: 0, fontSize: 9, type: 'scroll' },
+      grid: { left: 40, right: 20, bottom: 30, top: 40 },
+      xAxis: { type: 'category', data: months, axisLabel:{rotate:45,fontSize:10} },
+      yAxis: { type: 'value' },
+      series: typeNames.map((tn,i)=>({ name: tn, type: 'bar', stack: 'total',
+        data: months.map(m => { const r = tmData.data.find(d=>d.activity_type===tn && d.year_month===m); return r ? r.count : 0; }),
+        itemStyle: { color: COLORS[i%10] } }))
+    });
+  }
+  // Wechat by type
+  const wc = initChart('chart-act-wechat');
+  if (wc) wc.setOption({
+    tooltip: { trigger: 'axis' }, grid: { left: 60, right: 30, bottom: 60, top: 20 },
+    xAxis: { type: 'category', data: types.data.map(r=>r.activity_type), axisLabel:{rotate:30,fontSize:10} },
+    yAxis: { type: 'value', name: '人' },
+    series: [{ type:'bar', data: types.data.map(r=>r.total_wechat_adds), itemStyle:{color:'#8b5cf6',borderRadius:[4,4,0,0]}, label:{show:true,position:'top',fontSize:10} }]
+  });
+
+  // ── 代理商/门店维度分析 ──
+  let dsUrl = '/api/analysis/dealer_store';
+  const dsQs = buildSnapshotQS();
+  if (dsQs) dsUrl += '?' + dsQs;
+  let ds = { data: {} };
+  try {
+    const dsRes = await fetchJSON(dsUrl);
+    ds = dsRes.data ? dsRes : { data: dsRes };
+  } catch(e) { ds = { data: {} }; }
+  const dd = ds.data || {};
+  let dsHtml = '';
+
+  // 活动量排名
+  dsHtml += '<div class="review-section"><div class="analysis-section-title">活动量排名</div>';
+  if ((dd.activity_count_store||[]).length === 0) {
+    dsHtml += '<p class="empty-hint">暂无数据</p>';
+  } else {
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">门店 Top20</div>';
+    dsHtml += tableHTML(['门店','活动数','销售额','参与','企微'], (dd.activity_count_store||[]).map(r => [r.store_name||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat)]));
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin:10px 0 6px">代理商 Top20</div>';
+    dsHtml += tableHTML(['代理商','活动数','销售额','参与','企微','门店数'], (dd.activity_count_dealer||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), '¥'+fmtNum(r.total_sales), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtNum(r.stores)]));
+  }
+  dsHtml += '</div>';
+
+  // 零活动名单
+  dsHtml += '<div class="review-section"><div class="analysis-section-title">零活动名单</div>';
+  if ((dd.zero_activity_stores||[]).length === 0) {
+    dsHtml += '<p class="empty-hint">所有已开业门店均有活动</p>';
+  } else {
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">零活动门店 ('+dd.zero_activity_stores.length+'家)</div>';
+    dsHtml += tableHTML(['门店','代理商','省区','区域','类型'], (dd.zero_activity_stores||[]).slice(0,30).map(r => [r.store_name||'-', r.dealer||'-', r.province_unit||'-', r.region||'-', r.store_category||'-']));
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin:10px 0 6px">零活动代理商 ('+(dd.zero_activity_dealers||[]).length+'家)</div>';
+    dsHtml += tableHTML(['代理商','门店数','省区'], (dd.zero_activity_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.store_count), r.province_units||'-']));
+  }
+  dsHtml += '</div>';
+
+  // 活动转化低
+  dsHtml += '<div class="review-section"><div class="analysis-section-title">活动转化低（转化率升序，活动数>=3）</div>';
+  if ((dd.low_conversion_stores||[]).length === 0) {
+    dsHtml += '<p class="empty-hint">暂无数据</p>';
+  } else {
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">门店 Top20</div>';
+    dsHtml += tableHTML(['门店','活动数','参与','主机','转化率'], (dd.low_conversion_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin:10px 0 6px">代理商 Top20</div>';
+    dsHtml += tableHTML(['代理商','活动数','参与','主机','转化率'], (dd.low_conversion_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_hosts), fmtPct(r.conversion_rate)]));
+  }
+  dsHtml += '</div>';
+
+  // 企微蓄水低
+  dsHtml += '<div class="review-section"><div class="analysis-section-title">企微蓄水低（蓄水率升序，活动数>=3）</div>';
+  if ((dd.low_wechat_stores||[]).length === 0) {
+    dsHtml += '<p class="empty-hint">暂无数据</p>';
+  } else {
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin-bottom:6px">门店 Top20</div>';
+    dsHtml += tableHTML(['门店','活动数','参与','企微','蓄水率'], (dd.low_wechat_stores||[]).map(r => [r.store||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+    dsHtml += '<div class="analysis-section-title" style="font-size:13px;margin:10px 0 6px">代理商 Top20</div>';
+    dsHtml += tableHTML(['代理商','活动数','参与','企微','蓄水率'], (dd.low_wechat_dealers||[]).map(r => [r.dealer||'-', fmtNum(r.activity_count), fmtNum(r.total_participants), fmtNum(r.total_wechat), fmtPct(r.wechat_rate)]));
+  }
+  dsHtml += '</div>';
+
+  document.getElementById('act-dealer-store-section').innerHTML = dsHtml;
+}
+
+// ── Store Analysis ──────────────────────────
+async function loadStores() {
+  const overview = await getData('overview', '/api/overview');
+  const kpi = document.getElementById('store-kpi');
+  const inactiveRes = hasActiveFilters() ? {total: 0} : await fetchJSON('/api/stores/inactive');
+  const lowRes = hasActiveFilters() ? {total: 0} : await fetchJSON('/api/stores/low_completion');
+  kpi.innerHTML = [
+    {label:'有活动门店', value:fmtNum(overview.active_stores), sub:'/ '+overview.total_stores+'家', cls:'primary'},
+    {label:'无活动门店', value:fmtNum(inactiveRes.total), sub:'从未或超30天', cls:'danger'},
+    {label:'完成率低门店', value:fmtNum(lowRes.total), sub:'完成率<5%', cls:'warning'},
+    {label:'门店覆盖率', value:fmtPct(overview.active_stores/overview.total_stores), sub:'活动/总数', cls:'info'},
+  ].map(k=>`<div class="kpi-card"><div class="label">${k.label}</div><div class="value ${k.cls}">${k.value}</div><div class="sub">${k.sub}</div></div>`).join('');
+
+  await loadStoreTable();
+
+  // Top stores bar
+  const allStores = hasActiveFilters() ? {data: _snapshot.stores} : await fetchJSON('/api/stores?page=1&size=200');
+  const top15 = allStores.data.sort((a,b)=>b.activity_count-a.activity_count).slice(0,15);
+  const c1 = initChart('chart-store-top');
+  c1.setOption({
+    tooltip: { trigger:'axis' },
+    grid: { left: 130, right: 40, bottom: 20, top: 20 },
+    xAxis: { type:'value' },
+    yAxis: { type:'category', data: top15.map(r=>r.store_name).reverse(), axisLabel:{fontSize:10} },
+    series: [{ type:'bar', data: top15.map(r=>r.activity_count).reverse(), itemStyle:{color:COLORS[0]}, label:{show:true,position:'right',fontSize:10} }]
+  });
+
+  // Store grade distribution (from scores)
+  const scoresRes = await getData('scores_stores', '/api/scores/stores');
+  const grades = {};
+  (scoresRes.data||[]).forEach(r => { if(r.store_grade) grades[r.store_grade] = (grades[r.store_grade]||0)+1; });
+  const gradeColors = {'A':'#10b981','B':'#0ea5e9','C':'#f59e0b','D':'#ef4444'};
+  const c2 = initChart('chart-store-level');
+  c2.setOption({
+    tooltip: { trigger:'item', formatter:'{b}级: {c}家 ({d}%)' },
+    legend: { bottom:0, textStyle:{fontSize:11} },
+    series: [{ type:'pie', radius:['35%','65%'], center:['50%','45%'],
+      data: Object.entries(grades).map(([k,v])=>({name:k, value:v, itemStyle:{color:gradeColors[k]||COLORS[5]}})),
+     label:{formatter:'{b}\n{c}家'}
+   }]
+ });
+
+  // Store sales Top10
+  const topSales = [...(allStores.data||[])].sort((a,b)=>(b.total_sales||0)-(a.total_sales||0)).slice(0,10);
+  const sc = initChart('chart-store-sales');
+  if (sc) sc.setOption({
+    tooltip: { trigger:'axis' }, grid: { left: 130, right: 40, bottom: 20, top: 20 },
+    xAxis: { type:'value', name:'元', axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v} },
+    yAxis: { type:'category', data: topSales.map(r=>r.store_name||r.store).slice(0,10).reverse(), axisLabel:{fontSize:10} },
+    series: [{ type:'bar', data: topSales.map(r=>Math.round(r.total_sales||0)).reverse(), itemStyle:{color:COLORS[1],borderRadius:[0,4,4,0]}, label:{show:true,position:'right',fontSize:10} }]
+  });
+  // Store wechat Top10
+  const topWc = [...(allStores.data||[])].sort((a,b)=>(b.total_wechat_adds||0)-(a.total_wechat_adds||0)).slice(0,10);
+  const wcChart = initChart('chart-store-wechat');
+  if (wcChart) wcChart.setOption({
+    tooltip: { trigger:'axis' }, grid: { left: 130, right: 40, bottom: 20, top: 20 },
+    xAxis: { type:'value', name:'人' },
+    yAxis: { type:'category', data: topWc.map(r=>r.store_name||r.store).slice(0,10).reverse(), axisLabel:{fontSize:10} },
+    series: [{ type:'bar', data: topWc.map(r=>r.total_wechat_adds||0).reverse(), itemStyle:{color:'#8b5cf6',borderRadius:[0,4,4,0]}, label:{show:true,position:'right',fontSize:10} }]
+  });
+}
+
+async function loadStoreTable() {
+  let res;
+  if (hasActiveFilters() && _snapshot) {
+    let allData = _snapshot.stores || [];
+    if (storeSearch) allData = allData.filter(r => (r.store_name||'').includes(storeSearch));
+    const total = allData.length;
+    const start = (storePage-1)*50;
+    res = { data: allData.slice(start, start+50), total, page: storePage, size: 50 };
+  } else {
+    res = await fetchJSON(`/api/stores?page=${storePage}&size=50&search=${encodeURIComponent(storeSearch)}`);
+  }
+  // Also get scores
+  const scoresRes = await getData('scores_stores', '/api/scores/stores');
+  const scoreMap = {};
+  (scoresRes.data||[]).forEach(s => { scoreMap[s.store_name] = s; });
+  const tbl = document.getElementById('table-stores');
+  tbl.innerHTML = `<thead><tr>
+    <th>门店名称</th><th>省区</th><th>区域</th><th>等级</th><th>评分</th><th class="text-right">活动数</th>
+    <th class="text-right">已完成</th><th class="text-right">完成率</th><th class="text-right">健康度</th><th class="text-right">总销售额</th>
+    <th class="text-right">参与人数</th><th class="text-right">企微新增</th><th>最近活动</th>
+  </tr></thead><tbody>${res.data.map(r=>{
+    const sc = scoreMap[r.store_name]||{};
+    return `<tr>
+    <td>${r.store_name||'-'}</td><td>${r.province_unit||'-'}</td><td>${r.region||'-'}</td>
+    <td>${r.store_level||'-'}</td><td>${gradeBadge(sc.store_grade)}</td>
+    <td class="text-right">${fmtNum(r.activity_count)}</td>
+    <td class="text-right">${fmtNum(r.completed_count)}</td><td class="text-right">${fmtPct(r.completion_rate)}</td>
+    <td class="text-right">${(r.health_score!=null?r.health_score.toFixed(1):'-')}</td><td class="text-right">¥${fmtNum(r.total_sales)}</td>
+    <td class="text-right">${fmtNum(r.total_participants)}</td><td class="text-right">${fmtNum(r.total_wechat||0)}</td>
+    <td>${r.last_activity_date?String(r.last_activity_date).slice(0,10):'-'}</td>
+  </tr>`;
+  }).join('')}</tbody>`;
+  const totalPages = Math.ceil(res.total / res.size);
+  const pg = document.getElementById('store-pagination');
+  pg.innerHTML = `<button onclick="storePage=1;loadStoreTable()" ${storePage<=1?'disabled':''}>首页</button>
+    <button onclick="storePage--;loadStoreTable()" ${storePage<=1?'disabled':''}>上一页</button>
+    <span class="info">第 ${storePage}/${totalPages} 页，共 ${res.total} 条</span>
+    <button onclick="storePage++;loadStoreTable()" ${storePage>=totalPages?'disabled':''}>下一页</button>
+    <button onclick="storePage=${totalPages};loadStoreTable()" ${storePage>=totalPages?'disabled':''}>末页</button>`;
+}
+function onStoreSearch() { storePage=1; storeSearch=document.getElementById('store-search').value; loadStoreTable(); }
+
+// ── Dealer Analysis ─────────────────────────
+async function loadDealers() {
+  const res = await getData('dealers', '/api/dealers');
+  const top10 = res.data.sort((a,b)=>b.activity_count-a.activity_count).slice(0,10);
+  const top10sales = res.data.sort((a,b)=>b.total_sales-a.total_sales).slice(0,10);
+  const c1 = initChart('chart-dealer-top');
+  c1.setOption({
+    tooltip: { trigger:'axis' },
+    grid: { left: 150, right: 40, bottom: 20, top: 20 },
+    xAxis: { type:'value' },
+    yAxis: { type:'category', data: top10.map(r=>r.dealer).reverse(), axisLabel:{fontSize:10} },
+    series: [{ type:'bar', data: top10.map(r=>r.activity_count).reverse(), itemStyle:{color:COLORS[0]}, label:{show:true,position:'right',fontSize:10} }]
+  });
+
+  const c2 = initChart('chart-dealer-coverage');
+  c2.setOption({
+    tooltip: { trigger:'axis', formatter: p => p.map(x=>`${x.name}: ${fmtPct(x.value)}`).join('<br>') },
+    grid: { left: 150, right: 40, bottom: 20, top: 20 },
+    xAxis: { type:'value', max:1, axisLabel:{formatter:v=>(v*100).toFixed(0)+'%'} },
+    yAxis: { type:'category', data: top10.map(r=>r.dealer).reverse(), axisLabel:{fontSize:10} },
+    series: [{ type:'bar', data: top10.map(r=>r.store_coverage_rate||0).reverse(), itemStyle:{color:COLORS[1]}, label:{show:true,position:'right',formatter:p=>fmtPct(p.value),fontSize:10} }]
+  });
+
+  // 代理商销售额 Top10
+  const c3 = initChart('chart-dealer-sales');
+  c3.setOption({
+    tooltip: { trigger:'axis', formatter: p => p[0].name+': ¥'+fmtNum(p[0].value) },
+    grid: { left: 150, right: 50, bottom: 20, top: 20 },
+    xAxis: { type:'value', axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v} },
+    yAxis: { type:'category', data: top10sales.map(r=>r.dealer).reverse(), axisLabel:{fontSize:10} },
+    series: [{ type:'bar', data: top10sales.map(r=>Math.round(r.total_sales||0)).reverse(), itemStyle:{color:COLORS[3]}, label:{show:true,position:'right',formatter:p=>'¥'+fmtNum(p.value),fontSize:10} }]
+  });
+
+  // 活动质量矩阵散点图
+  const c4 = initChart('chart-dealer-scatter');
+  const scatterData = res.data.filter(r=>r.activity_count>0).map(r=>({
+    name: r.dealer, value: [r.activity_count, Math.round(r.total_sales||0), r.store_coverage_rate||0]
+  }));
+  c4.setOption({
+    tooltip: { formatter: p => `${p.data.name}<br/>活动${p.value[0]}场 | ¥${fmtNum(p.value[1])} | 覆盖${fmtPct(p.value[2])}` },
+    grid: { left: 60, right: 30, bottom: 40, top: 20 },
+    xAxis: { type:'value', name:'活动数', nameLocation:'middle', nameGap:25 },
+    yAxis: { type:'value', name:'销售额', axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v} },
+    series: [{ type:'scatter', symbolSize: p=>Math.max(8, p[2]*20), data: scatterData.map(d=>({name:d.name, value:d.value})), itemStyle:{color:COLORS[4], opacity:0.7}, label:{show:false} }]
+  });
+
+  // Get dealer scores
+  const dealerScores = await getData('scores_dealers', '/api/scores/dealers');
+  const dScoreMap = {};
+  (dealerScores.data||[]).forEach(s => { dScoreMap[s.dealer] = s; });
+
+  const tbl = document.getElementById('table-dealers');
+  tbl.innerHTML = `<thead><tr>
+    <th>代理商</th><th>评分</th><th class="text-right">活动数</th><th class="text-right">已完成</th><th class="text-right">完成率</th>
+    <th class="text-right">健康度</th><th class="text-right">总销售额</th><th class="text-right">场均销售</th><th class="text-right">参与人数</th><th class="text-right">企微新增</th>
+    <th class="text-right">覆盖门店</th><th class="text-right">总门店</th><th class="text-right">覆盖率</th><th class="text-right">类型数</th>
+  </tr></thead><tbody>${res.data.map(r=>{
+    const sc = dScoreMap[r.dealer]||{};
+    return `<tr>
+    <td>${r.dealer||'-'}</td><td>${gradeBadge(sc.dealer_grade)}</td>
+    <td class="text-right">${fmtNum(r.activity_count)}</td>
+    <td class="text-right">${fmtNum(r.completed_count)}</td><td class="text-right">${fmtPct(r.completion_rate)}</td>
+    <td class="text-right">${(sc.health_score!=null?sc.health_score.toFixed(1):'-')}</td>
+    <td class="text-right">¥${fmtNum(r.total_sales)}</td><td class="text-right">¥${fmtNum(r.sales_per_activity)}</td>
+    <td class="text-right">${fmtNum(r.total_participants)}</td><td class="text-right">${fmtNum(r.total_wechat_adds||0)}</td>
+    <td class="text-right">${fmtNum(r.active_stores)}</td><td class="text-right">${fmtNum(r.store_count)}</td>
+    <td class="text-right">${fmtPct(r.store_coverage_rate)}</td><td class="text-right">${fmtNum(r.activity_types)}</td>
+  </tr>`;
+  }).join('')}</tbody>`;
+}
+
+// ── Product Analysis ────────────────────────
+async function loadProducts() {
+  const res = await getData('products', '/api/products');
+  const c1 = initChart('chart-product-sales');
+  c1.setOption({
+    tooltip: { trigger:'axis' },
+    legend: { data:['总销量','活动场次'], top:0 },
+    grid: { left: 60, right: 30, bottom: 30, top: 30 },
+    xAxis: { type:'category', data: res.data.map(r=>r.product) },
+    yAxis: [{ type:'value', name:'销量' }, { type:'value', name:'场次' }],
+    series: [
+      { name:'总销量', type:'bar', data: res.data.map(r=>Math.round(r.total_sales||0)), itemStyle:{color:COLORS[0]}, label:{show:true,formatter:p=>fmtNum(p.value)} },
+      { name:'活动场次', type:'line', yAxisIndex:1, data: res.data.map(r=>r.activity_count||0), itemStyle:{color:COLORS[2]} }
+    ]
+  });
+
+  const c2 = initChart('chart-product-share');
+  c2.setOption({
+    tooltip: { trigger:'item', formatter:'{b}: {c} ({d}%)' },
+    legend: { bottom:0, textStyle:{fontSize:11} },
+    series: [{ type:'pie', radius:['40%','70%'], center:['50%','45%'], data: res.data.map((r,i)=>({name:r.product, value:Math.round(r.total_sales||0), itemStyle:{color:COLORS[i%10]}})) }]
+  });
+
+  const tbl = document.getElementById('table-products');
+  tbl.innerHTML = `<thead><tr>
+    <th>产品系列</th><th class="text-right">总销量</th><th class="text-right">活动场次</th>
+    <th class="text-right">场均销量</th><th class="text-right">市场份额</th><th>主要活动类型</th>
+  </tr></thead><tbody>${res.data.map(r=>`<tr>
+    <td>${r.product}</td><td class="text-right">${fmtNum(r.total_sales)}</td>
+    <td class="text-right">${fmtNum(r.activity_count)}</td><td class="text-right">${fmtNum(r.avg_sales_per_activity)}</td>
+   <td class="text-right">${fmtPct(r.market_share)}</td><td>${r.top_activity_types||'-'}</td>
+ </tr>`).join('')}</tbody>`;
+
+  // Product monthly trend
+  const pm = await getData('product_monthly', '/api/product/monthly');
+  const pmc = initChart('chart-product-monthly');
+  if (pmc && pm && pm.data) {
+    const pKeys = ['Luna','X系列','Go系列','Ace系列'];
+    pmc.setOption({
+      tooltip: { trigger: 'axis' }, legend: { data: pKeys, top: 0 },
+      grid: { left: 50, right: 30, bottom: 60, top: 30 },
+      xAxis: { type: 'category', data: pm.data.map(r=>r.year_month), axisLabel:{rotate:45,fontSize:10} },
+      yAxis: { type: 'value', name: '台' },
+      series: pKeys.map((k,i)=>({ name: k, type: 'line', smooth: true,
+        data: pm.data.map(r=>r[k]||0), itemStyle: { color: COLORS[i%10] } }))
+    });
+  }
+  // Product x type heatmap
+  const cross = await getData('product_type_cross', '/api/product/type_cross');
+  const hc = initChart('chart-product-heat');
+  if (hc && cross && cross.data) {
+    const pKeys = ['Luna','X系列','Go系列','Ace系列'];
+    const types = cross.data.map(r=>r.activity_type);
+    let maxVal = 0;
+    const heatData = [];
+    types.forEach((t,ti)=>{ pKeys.forEach((p,pi)=>{ const v=cross.data[ti][p]||0; heatData.push([pi,ti,v]); if(v>maxVal)maxVal=v; }) });
+    hc.setOption({
+      tooltip: { position: 'top' }, grid: { left: 100, right: 40, bottom: 60, top: 20 },
+      xAxis: { type: 'category', data: pKeys, splitArea: { show: true } },
+      yAxis: { type: 'category', data: types, splitArea: { show: true } },
+      visualMap: { min: 0, max: maxVal||1, calculable: true, orient: 'horizontal', left: 'center', bottom: 0,
+        inRange: { color: ['#f0f0f0','#c4b5fd','#8b5cf6','#6d28d9','#4c1d95'] } },
+      series: [{ type: 'heatmap', data: heatData, label: { show: true, fontSize: 10 }, emphasis: { itemStyle: { shadowBlur: 10 } } }]
+    });
+    // Cross detail table
+    const ct = document.getElementById('table-product-cross');
+    if (ct) {
+      let h = '<thead><tr><th>活动类型</th>'; pKeys.forEach(p=>h+=`<th>${p}</th>`); h += '</tr></thead><tbody>';
+      types.forEach(t=>{ const row=cross.data.find(r=>r.activity_type===t); h+='<tr><td>'+t+'</td>'; pKeys.forEach(p=>{ h+=`<td class="text-right">${fmtNum(row[p]||0)}</td>` }); h+='</tr>' });
+      h += '</tbody>'; ct.innerHTML = h;
+    }
+  }
+}
+
+// ── Region Analysis ─────────────────────────
+async function loadRegions() {
+  const regions = await getData('regions', '/api/regions');
+  const top15 = regions.data.sort((a,b)=>b.activity_count-a.activity_count).slice(0,15);
+  const c1 = initChart('chart-region-bar');
+  c1.setOption({
+    tooltip: { trigger:'axis' },
+    grid: { left: 110, right: 40, bottom: 20, top: 20 },
+    xAxis: { type:'value' },
+    yAxis: { type:'category', data: top15.map(r=>r.region).reverse(), axisLabel:{fontSize:10} },
+    series: [{ type:'bar', data: top15.map(r=>r.activity_count).reverse(), itemStyle:{color:COLORS[0]}, label:{show:true,position:'right',fontSize:10} }]
+  });
+
+  const provinces = await getData('provinces', '/api/provinces');
+  const top15p = provinces.data.sort((a,b)=>(b.total_sales||0)-(a.total_sales||0)).slice(0,15);
+  const c2 = initChart('chart-province-sales');
+  c2.setOption({
+    tooltip: { trigger:'axis' },
+    grid: { left: 80, right: 30, bottom: 60, top: 20 },
+    xAxis: { type:'category', data: top15p.map(r=>r.province), axisLabel:{rotate:40,fontSize:10} },
+    yAxis: { type:'value', name:'销售额(元)', axisLabel:{formatter:v=>v>=10000?(v/10000).toFixed(0)+'万':v} },
+    series: [{ type:'bar', data: top15p.map(r=>Math.round(r.total_sales||0)), itemStyle:{color:COLORS[1]}, label:{show:true,position:'top',formatter:p=>fmtNum(p.value),fontSize:9} }]
+  });
+
+  // Get region scores
+  const regionScores = await getData('scores_regions', '/api/scores/regions');
+  const rScoreMap = {};
+  (regionScores.data||[]).forEach(s => { rScoreMap[s.region] = s; });
+
+  const tbl = document.getElementById('table-regions');
+  tbl.innerHTML = `<thead><tr>
+    <th>省区单元</th><th>评分</th><th class="text-right">活动数</th><th class="text-right">已完成</th><th class="text-right">完成率</th>
+    <th class="text-right">总销售额</th><th class="text-right">覆盖门店</th>
+    <th class="text-right">代理商数</th><th class="text-right">店均销售</th>
+  </tr></thead><tbody>${regions.data.map(r=>{
+    const sc = rScoreMap[r.region]||{};
+    return `<tr>
+    <td>${r.region||'-'}</td><td>${gradeBadge(sc.region_grade)}</td>
+    <td class="text-right">${fmtNum(r.activity_count)}</td>
+    <td class="text-right">${fmtNum(r.completed_count)}</td><td class="text-right">${fmtPct(r.completion_rate)}</td>
+    <td class="text-right">¥${fmtNum(r.total_sales)}</td>
+    <td class="text-right">${fmtNum(r.active_stores)}</td><td class="text-right">${fmtNum(r.dealers)}</td>
+    <td class="text-right">¥${fmtNum(r.sales_per_store)}</td>
+  </tr>`;
+  }).join('')}</tbody>`;
+}
+
+// ── Diagnosis ───────────────────────────────
+
+// ── Channel Analysis ──────────────────────────
+async function loadChannel() {
+  const ch = await getData('channel', '/api/channel/comparison');
+  const mall = ch.mall || {}, mat = ch.material || {};
+  const kpi = document.getElementById('channel-kpi');
+  if (kpi) kpi.innerHTML = [
+    {label:'Mall店 活动场次', value:fmtNum(mall.count), sub:'场', cls:'primary'},
+    {label:'Mall店 销售额', value:'¥'+fmtNum(mall.sales), sub:'累计', cls:'success'},
+    {label:'照材店 活动场次', value:fmtNum(mat.count), sub:'场', cls:'info'},
+    {label:'照材店 销售额', value:'¥'+fmtNum(mat.sales), sub:'累计', cls:'warning'},
+  ].map(k=>'<div class="kpi-card"><div class="label">'+k.label+'</div><div class="value '+k.cls+'">'+k.value+'</div><div class="sub">'+k.sub+'</div></div>').join('');
+
+  var c1 = initChart('chart-channel-compare');
+  if (c1) c1.setOption({
+    tooltip:{trigger:'axis'},legend:{data:['Mall店','照材店'],top:0},
+    grid:{left:50,right:30,bottom:30,top:40},
+    xAxis:{type:'category',data:['场次','销售(万)','主机','企微','参与']},
+    yAxis:{type:'value'},
+    series:[{name:'Mall店',type:'bar',data:[mall.count,+(mall.sales/1e4).toFixed(1),mall.hosts,mall.wechat,mall.participants],itemStyle:{color:'#FF6B35'},barWidth:'25%'},
+            {name:'照材店',type:'bar',data:[mat.count,+(mat.sales/1e4).toFixed(1),mat.hosts,mat.wechat,mat.participants],itemStyle:{color:'#06b6d4'},barWidth:'25%'}]
+  });
+
+  var dr = await getData('drone', '/api/channel/drone');
+  var drone = dr.drone || {}, normal = dr.normal || {};
+  var c2 = initChart('chart-drone-compare');
+  if (c2) c2.setOption({
+    tooltip:{trigger:'axis'},legend:{data:['无人机活动','普通活动'],top:0},
+    grid:{left:50,right:30,bottom:30,top:40},
+    xAxis:{type:'category',data:['场次','销售(万)','主机','企微','参与']},
+    yAxis:{type:'value'},
+    series:[{name:'无人机活动',type:'bar',data:[drone.count,+(drone.sales/1e4).toFixed(1),drone.hosts,drone.wechat,drone.participants],itemStyle:{color:'#FF6B35'},barWidth:'25%'},
+            {name:'普通活动',type:'bar',data:[normal.count,+(normal.sales/1e4).toFixed(1),normal.hosts,normal.wechat,normal.participants],itemStyle:{color:'#8b5cf6'},barWidth:'25%'}]
+  });
+
+  var ct = document.getElementById('table-channel-compare');
+  if (ct) {
+    var metrics = [['活动场次','count'],['已完成','completed'],['销售额','sales'],['场均销售','avg_sales'],['参与人数','participants'],['企微新增','wechat'],['转化主机','hosts'],['覆盖门店','stores'],['Luna销量','luna'],['Go系列','go'],['Ace系列','ace'],['成交率(%)','conv_rate']];
+    var h='<thead><tr><th>经营指标</th><th>Mall店</th><th>照材店</th><th>差距</th></tr></thead><tbody>';
+    metrics.forEach(function(m){var mv=mall[m[1]]||0,tv=mat[m[1]]||0,d=mv-tv;
+      h+='<tr><td>'+m[0]+'</td><td class="text-right">'+fmtNum(mv)+'</td><td class="text-right">'+fmtNum(tv)+'</td><td class="text-right" style="color:'+(d>=0?'#10b981':'#ef4444')+'">'+(d>=0?'+':'')+fmtNum(d)+'</td></tr>';});
+    h+='</tbody>';ct.innerHTML=h;
+  }
+  var dt = document.getElementById('table-drone-compare');
+  if (dt) {
+    var h2='<thead><tr><th>经营指标</th><th>无人机活动</th><th>普通活动</th><th>差距</th></tr></thead><tbody>';
+    metrics.forEach(function(m){var dv=drone[m[1]]||0,nv=normal[m[1]]||0,d=dv-nv;
+      h2+='<tr><td>'+m[0]+'</td><td class="text-right">'+fmtNum(dv)+'</td><td class="text-right">'+fmtNum(nv)+'</td><td class="text-right" style="color:'+(d>=0?'#10b981':'#ef4444')+'">'+(d>=0?'+':'')+fmtNum(d)+'</td></tr>';});
+    h2+='</tbody>';dt.innerHTML=h2;
+  }
+
+  var brands = await getData('brands', '/api/channel/brands');
+  var top15 = (brands.data||[]).slice(0,15);
+  var bc = initChart('chart-brands');
+  if (bc) bc.setOption({
+    tooltip:{trigger:'axis'},grid:{left:120,right:30,bottom:20,top:20},
+    xAxis:{type:'value'},yAxis:{type:'category',data:top15.map(function(b){return b.brand}).reverse(),axisLabel:{fontSize:10}},
+    series:[{type:'bar',data:top15.map(function(b){return b.count}).reverse(),itemStyle:{color:'#f59e0b',borderRadius:[0,4,4,0]},label:{show:true,position:'right',fontSize:10}}]
+  });
+  var bt = document.getElementById('table-brands');
+  if (bt) {
+    var bh='<thead><tr><th>#</th><th>品牌</th><th class="text-right">合作次数</th><th class="text-right">合作销售额</th><th class="text-right">场均</th></tr></thead><tbody>';
+    (brands.data||[]).forEach(function(b,i){bh+='<tr><td>'+(i+1)+'</td><td>'+b.brand+'</td><td class="text-right">'+fmtNum(b.count)+'</td><td class="text-right">¥'+fmtNum(b.sales)+'</td><td class="text-right">¥'+fmtNum(b.avg_sales)+'</td></tr>';});
+    bh+='</tbody>';bt.innerHTML=bh;
+  }
+}
+const DIAG_LABELS = {
+  inactive_stores: {label:'无活动门店', desc:'从未举办或超30天无活动'},
+  low_completion: {label:'完成率低', desc:'5场以上完成率<5%'},
+  single_activity_type: {label:'类型单一', desc:'所有活动只有一种类型'},
+  low_sales_activities: {label:'销售低', desc:'已完成活动销售<500元'},
+  region_gaps: {label:'区域覆盖不足', desc:'活动量低或覆盖率<30%'},
+  activity_quality: {label:'活动质量', desc:'异常标记/零参与/高费用零产出'},
+  excellent_activities: {label:'优秀案例', desc:'销售额Top5%'}
+};
+let _diagData = null;
+let _diagCurrentKey = null;
+
+async function loadDiagnosis() {
+  // Load insight engine data
+  const insights = await getData('insights', '/api/insights');
+  document.getElementById('insight-problems').innerHTML = (insights.problems||[]).map(insightCardHTML).join('');
+  document.getElementById('insight-opportunities').innerHTML = (insights.opportunities||[]).map(insightCardHTML).join('');
+  document.getElementById('insight-risks').innerHTML = (insights.risks||[]).map(insightCardHTML).join('');
+  document.getElementById('insight-recommendations').innerHTML = (insights.recommendations||[]).map(recCardHTML).join('');
+
+  const data = hasActiveFilters() ? {} : await fetchJSON('/api/diagnostics');
+  _diagData = data;
+  const summary = document.getElementById('diag-summary');
+  summary.innerHTML = Object.entries(DIAG_LABELS).map(([key,info])=>{
+    const items = data[key]||[];
+    const count = Array.isArray(items) ? items.length : (items.count||0);
+    let sev = 'low';
+    if (key==='inactive_stores' || key==='activity_quality') sev='high';
+    else if (key==='low_completion' || key==='region_gaps') sev='medium';
+    return `<div class="diag-card ${sev}"><div class="count">${count}</div><div class="label">${info.label}</div><div class="desc">${info.desc}</div></div>`;
+  }).join('');
+
+  const tabs = document.getElementById('diag-tabs');
+  const tabKeys = Object.keys(DIAG_LABELS).filter(k => {
+    const items = data[k]||[];
+    return Array.isArray(items) ? items.length>0 : true;
+  });
+  tabs.innerHTML = tabKeys.map(k => `<div class="tab-btn" data-key="${k}" onclick="switchDiagTab('${k}')">${DIAG_LABELS[k].label}</div>`).join('');
+  if (tabKeys.length > 0) switchDiagTab(tabKeys[0]);
+}
+
+function switchDiagTab(key) {
+  _diagCurrentKey = key;
+  // Update active tab
+  document.querySelectorAll('#diag-tabs .tab-btn').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === key);
+  });
+  if (!_diagData) return;
+  const label = DIAG_LABELS[key] ? DIAG_LABELS[key].label : key;
+  document.getElementById('diag-detail-title').textContent = label + ' - 问题明细';
+  const items = _diagData[key]||[];
+  const detail = document.getElementById('diag-detail');
+  if (!Array.isArray(items)) {
+    detail.innerHTML = `<div class="issue-item">${items.description||'-'}</div>`;
+    return;
+  }
+  detail.innerHTML = items.slice(0,100).map(item => {
+    if (typeof item === 'string') return `<div class="issue-item">${item}</div>`;
+    const sev = item.severity || 'low';
+    const tag = `<span class="issue-tag ${sev}">${sev.toUpperCase()}</span>`;
+    const desc = item.description || JSON.stringify(item);
+    return `<div class="issue-item">${tag}<span>${desc}</span></div>`;
+  }).join('') + (items.length>100 ? `<div class="issue-item" style="color:var(--text-light)">... 还有 ${items.length-100} 项</div>` : '');
+}
+
+// ── Excellent Cases ─────────────────────────
+async function loadExcellent() {
+  // Load replication candidates
+  const insights = await getData('insights', '/api/insights');
+  const repList = document.getElementById('replication-list');
+  const reps = insights.replication || [];
+  repList.innerHTML = reps.map(c => `<div class="case-card">
+    <div class="case-rank">${c.grade||'A'}</div>
+    <div class="case-info">
+      <div class="name">${c.title || c.name || '-'}</div>
+      <div class="meta">${c.metrics || ''}</div>
+      <div class="meta" style="color:var(--primary)">${c.replication || ''}</div>
+    </div>
+  </div>`).join('') || '<div class="loading">暂无案例</div>';
+
+  const res = await getData('excellent', '/api/excellent');
+  const list = document.getElementById('excellent-list');
+  list.innerHTML = (res.data||[]).map(c => `<div class="case-card">
+    <div class="case-rank">#${c.rank}</div>
+    <div class="case-info">
+      <div class="name">${c.activity_desc ? c.activity_desc.slice(0,60)+(c.activity_desc.length>60?'...':'') : '-'}</div>
+      <div class="meta">${c.store_name||'-'} · ${c.activity_type||'-'} · ${c.activity_date||'-'} · ${c.province_unit||'-'}</div>
+    </div>
+    <div class="case-sales"><div class="amount">¥${fmtNum(c.sales)}</div><div class="label">参与${c.participants||0}人 · 企微${c.wechat_adds||0}</div></div>
+  </div>`).join('') || '<div class="loading">暂无优秀案例数据</div>';
+
+  // 优秀活动类型分布
+  const typeCount = {};
+  (res.data||[]).forEach(c => { const t = c.activity_type||'其他'; typeCount[t] = (typeCount[t]||0)+1; });
+  const tc = initChart('chart-excellent-type');
+  tc.setOption({
+    tooltip:{trigger:'item',formatter:'{b}: {c}场 ({d}%)'},
+    legend:{bottom:0,textStyle:{fontSize:11}},
+    series:[{type:'pie',radius:'60%',center:['50%','45%'],
+      data:Object.entries(typeCount).map(([k,v],i)=>({name:k,value:v,itemStyle:{color:COLORS[i%10]}}))}]
+  });
+
+  // 优秀活动区域分布
+  const regionCount = {};
+  (res.data||[]).forEach(c => { const r = c.province_unit||'未知'; regionCount[r] = (regionCount[r]||0)+1; });
+  const topRegions = Object.entries(regionCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const rc = initChart('chart-excellent-region');
+  rc.setOption({
+    tooltip:{trigger:'axis'},
+    grid:{left:100,right:30,bottom:20,top:20},
+    xAxis:{type:'value'},
+    yAxis:{type:'category',data:topRegions.map(r=>r[0]).reverse(),axisLabel:{fontSize:10}},
+    series:[{type:'bar',data:topRegions.map(r=>r[1]).reverse(),itemStyle:{color:COLORS[5]},label:{show:true,position:'right',fontSize:10}}]
+  });
+}
+
+// ── Init ────────────────────────────────────
+window.addEventListener('resize', () => { Object.values(charts).forEach(c => c && c.resize()); });
+loadOverview();
+</script>
+</body>
+</html>
